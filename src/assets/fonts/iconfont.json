@@ -1,0 +1,184 @@
+{
+  "id": "4722439",
+  "name": "HUDicon库",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "32885787",
+      "name": "警示",
+      "font_class": "a-09_jingshi_fill",
+      "unicode": "e670",
+      "unicode_decimal": 58992
+    },
+    {
+      "icon_id": "37226688",
+      "name": "警报",
+      "font_class": "jingbao",
+      "unicode": "e641",
+      "unicode_decimal": 58945
+    },
+    {
+      "icon_id": "13604664",
+      "name": "警告",
+      "font_class": "jinggao",
+      "unicode": "e658",
+      "unicode_decimal": 58968
+    },
+    {
+      "icon_id": "683294",
+      "name": "暂停",
+      "font_class": "zanting",
+      "unicode": "e669",
+      "unicode_decimal": 58985
+    },
+    {
+      "icon_id": "18533079",
+      "name": "搜索",
+      "font_class": "sousuo",
+      "unicode": "e607",
+      "unicode_decimal": 58887
+    },
+    {
+      "icon_id": "26535224",
+      "name": "播放",
+      "font_class": "bofang",
+      "unicode": "e620",
+      "unicode_decimal": 58912
+    },
+    {
+      "icon_id": "19190744",
+      "name": "高速路况",
+      "font_class": "gaosulukuang",
+      "unicode": "e601",
+      "unicode_decimal": 58881
+    },
+    {
+      "icon_id": "21598294",
+      "name": "主干道",
+      "font_class": "zhugandao",
+      "unicode": "e648",
+      "unicode_decimal": 58952
+    },
+    {
+      "icon_id": "29838484",
+      "name": "主干道",
+      "font_class": "zhugandao1",
+      "unicode": "e610",
+      "unicode_decimal": 58896
+    },
+    {
+      "icon_id": "30978554",
+      "name": "主次干道",
+      "font_class": "zhucigandao",
+      "unicode": "e6a5",
+      "unicode_decimal": 59045
+    },
+    {
+      "icon_id": "41134790",
+      "name": "乡村道路",
+      "font_class": "xiangcundaolu",
+      "unicode": "e66e",
+      "unicode_decimal": 58990
+    },
+    {
+      "icon_id": "4862242",
+      "name": "关闭",
+      "font_class": "guanbi",
+      "unicode": "e61c",
+      "unicode_decimal": 58908
+    },
+    {
+      "icon_id": "5901133",
+      "name": "右",
+      "font_class": "you",
+      "unicode": "e621",
+      "unicode_decimal": 58913
+    },
+    {
+      "icon_id": "9974769",
+      "name": "时间",
+      "font_class": "shijian",
+      "unicode": "e714",
+      "unicode_decimal": 59156
+    },
+    {
+      "icon_id": "11372763",
+      "name": "定位",
+      "font_class": "dingwei",
+      "unicode": "e8c4",
+      "unicode_decimal": 59588
+    },
+    {
+      "icon_id": "21559791",
+      "name": "展开",
+      "font_class": "zhankai",
+      "unicode": "e60e",
+      "unicode_decimal": 58894
+    },
+    {
+      "icon_id": "21559793",
+      "name": "收起",
+      "font_class": "shouqi",
+      "unicode": "e60f",
+      "unicode_decimal": 58895
+    },
+    {
+      "icon_id": "6953926",
+      "name": "告警",
+      "font_class": "gaojing",
+      "unicode": "e639",
+      "unicode_decimal": 58937
+    },
+    {
+      "icon_id": "4481308",
+      "name": "道路",
+      "font_class": "daolu",
+      "unicode": "e604",
+      "unicode_decimal": 58884
+    },
+    {
+      "icon_id": "26047412",
+      "name": "刷新",
+      "font_class": "a-shuaxinsvg",
+      "unicode": "e676",
+      "unicode_decimal": 58998
+    },
+    {
+      "icon_id": "538491",
+      "name": "减",
+      "font_class": "jian",
+      "unicode": "e643",
+      "unicode_decimal": 58947
+    },
+    {
+      "icon_id": "9974761",
+      "name": "加",
+      "font_class": "jia",
+      "unicode": "e711",
+      "unicode_decimal": 59153
+    },
+    {
+      "icon_id": "13077827",
+      "name": "层级",
+      "font_class": "cengji",
+      "unicode": "e61d",
+      "unicode_decimal": 58909
+    },
+    {
+      "icon_id": "23428470",
+      "name": "全屏",
+      "font_class": "quanping4",
+      "unicode": "e66f",
+      "unicode_decimal": 58991
+    },
+    {
+      "icon_id": "7533285",
+      "name": "退出全屏",
+      "font_class": "tuichuquanping",
+      "unicode": "e603",
+      "unicode_decimal": 58883
+    }
+  ]
+}

@@ -1,0 +1,1328 @@
+<template>
+  <div class="big-screen">
+    <header-component :headerImage="headerImage" :buttonImage="buttonImage" :selectedButtonImage="selectedButtonImage"
+      :buttonCount="buttonCount" :initialSelectedButton="0" :buttonLabels="buttonLabels"
+      @button-selected="handleButtonSelected" />
+    <div class="content">
+      <div id="map" class="map-container"></div>
+    </div>
+    <!-- 固定的左上角选择框 -->
+
+    <div class="section-top" style="width: 443px;height: 40px;line-height: 40px;padding-left: 30px;margin-top: 20px;font-size: 16px;font-weight: 800;display: flex;align-items: center;">
+     <img :src="right"> <div style="margin-left: 3px;">选择道路</div>
+    </div>
+    <div class="fixed-div">
+    <!-- 道路选择 -->
+    <label for="road-select" class="label">道路名称</label>
+    <select id="road-select" v-model="selectedRoadId" @change="fetchRoadSections" class="styled-select">
+      <option v-for="road in roadList" :key="road.id" :value="road.id">{{ road.name }}</option>
+    </select>
+
+    <!-- 路段选择 -->
+    <label for="road-section-select" class="label">路段名称</label>
+<select id="road-section-select" v-model="selectedRoadSectionId" @change="handleRoadSectionSelection" class="styled-select">
+  <option v-for="section in roadSectionList" :key="section.id" :value="section.id">{{ section.name }}</option>
+</select>
+  </div>
+    <!-- 左侧新增统计框 -->
+  
+<div class="statistics-div">
+  <h3 class="title" style="
+      font-size: 16px;
+      height: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 10px;
+      background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
+      border-radius: 5px;">
+    <img :src="right" alt="右侧图片" style="width: 20px; height: 20px;"> 
+    <div style="flex: 1; text-align: center; color: #FFFFFF;" class="mmfont">道路关联设施统计</div>
+    <img :src="left" alt="左侧图片" style="width: 20px; height: 20px;">
+  </h3>
+  <div class="statistics-section">
+    <h4 class="statistics-subtitle">交通标志</h4>
+    <ul class="statistics-list">
+      <li v-for="(count, type) in trafficSignCounts" :key="type">
+        <div class="count">{{ count }}</div>
+        <div class="type">{{ type }}</div>
+      </li>
+    </ul>
+  </div>
+  <div class="statistics-section">
+    <h4 class="statistics-subtitle">路面标线</h4>
+    <ul class="statistics-list">
+      <li v-for="(count, type) in roadMarkCounts" :key="type">
+        <div class="count">{{ count }}</div>
+        <div class="type">{{ type }}</div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+    <div class="custom-hazard-box">
+      <h3 class="custom-box-title">道路资产</h3>
+      <div class="custom-hazard-indicators">
+        <div class="custom-hazard-item">
+          <img :src="minorpitfallImage" alt="警告标志" />
+          <span>警告标志</span>
+        </div>
+        <div class="custom-hazard-item">
+          <img :src="stopImage" alt="禁令标志" />
+          <span>禁令标志</span>
+        </div>
+        <div class="custom-hazard-item">
+          <img :src="tipsImage" alt="指示标志" />
+          <span>指示标志</span>
+        </div>
+        <div class="custom-hazard-item">
+          <img :src="luzhifallImage" alt="指路标志" />
+          <span>指路标志</span>
+        </div>
+        <div class="custom-hazard-item">
+          <img :src="sgaqImage" alt="施工安全标志" />
+          <span>施工安全标志</span>
+        </div>
+        <div class="custom-hazard-item">
+          <img :src="dengImage" alt="交通信号灯" />
+          <span>交通信号灯</span>
+        </div>
+      </div>
+    </div>
+    <!-- <transition name="scale-popup"> -->
+      <div v-if="popupVisible" class="popup">
+      <div class="popup-background"></div>
+      <h3 class="popup-title">
+        <img :src="right" alt="右侧图片" />
+        <div class="mmfont">路段信息</div>
+        <img 
+          :src="cha2Image" 
+          alt="叉号" 
+          style="width: 15px; height: 15px; cursor: pointer;" 
+          @click="popupVisible = false"
+        />
+
+      </h3>
+      <div class="road-info">
+        <div>
+          <strong>路段名称：</strong>
+          <span>{{ selectedRoad.name }}</span>
+        </div>
+        <div>
+          <strong>所属行政区划：</strong>
+          <span>{{ selectedRoad.town_name }}</span>
+        </div>
+        <div>
+          <strong>道路类别：</strong>
+          <span>
+            <img
+              v-if="selectedRoad.type_name === '高速道路'"
+              style="width: 20px; height: 20px;"
+              :src="require('@/assets/gs.png')"
+              alt="高速道路"
+            />
+            <img
+              v-else-if="selectedRoad.type_name === '国省道路'"
+              style="width: 20px; height: 20px;"
+              :src="require('@/assets/gsg.png')"
+              alt="国省道路"
+            />
+            <img
+              v-else-if="selectedRoad.type_name === '城市主干道'"
+              style="width: 20px; height: 20px;"
+              :src="require('@/assets/zg.png')"
+              alt="城市主干道"
+            />
+            <img
+              v-else-if="selectedRoad.type_name === '城市次干道'"
+              style="width: 20px; height: 20px;"
+              :src="require('@/assets/zcg.png')"
+              alt="城市次干道"
+            />
+            <img
+              v-else-if="selectedRoad.type_name === '县乡村道路'"
+              style="width: 20px; height: 20px;"
+              :src="require('@/assets/xc.png')"
+              alt="县乡村道路"
+            />
+            <img
+              v-else
+              style="width: 20px; height: 20px;"
+              :src="require('@/assets/wm.png')"
+              alt="无名道路"
+            />
+          </span>
+        </div>
+        <div>
+          <strong>所属道路：</strong>
+          <span>{{ selectedRoad.road_name }}</span>
+        </div>
+        <div>
+          <strong>起点经纬度：</strong>
+          <span>{{ formatCoordinates(selectedRoad.spoint) }}</span>
+        </div>
+        <div>
+          <strong>终点经纬度：</strong> 
+          <span>{{ formatCoordinates(selectedRoad.epoint) }}</span>
+        </div>
+      </div>
+      <div class="separator"></div>
+      <button @click="closePopup" class="popup-close-btn">关闭</button>
+    </div>
+
+    <div class="map-mode-switch">
+  <button @click="switchToMapMode" class="switch-button">地图</button>
+  <button @click="switchToSatelliteMode" class="switch-button">地球</button>
+  <button @click="switchToPanoramaMode" class="switch-button">实景</button>
+</div>
+    <!-- </transition> -->
+    <div v-if="panoramaVisible" class="panorama-popup">
+  <div class="popup-background2"></div>
+  <div class="panorama-content" style="display: flex;align-items: center;flex-direction: column;padding-top: 10px;">
+    <h3 class="title" style="
+      font-size: 16px;
+      height: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0 10px;
+      background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
+      border-radius: 5px;">
+    <img :src="right" alt="右侧图片" style="width: 20px; height: 20px;"> 
+    <div style="flex: 1; text-align: center; color: #FFFFFF;" class="mmfont">实景图</div>
+    <!-- <img :src="left" alt="左侧图片" style="width: 20px; height: 20px;"> -->
+    <img :src="cha2Image" alt="叉号"   style="width: 15px; height: 15px; cursor: pointer;"  @click="panoramaVisible = false">
+    <!-- cha2 -->
+  </h3>
+  <img 
+      :src="roadImgs[currentImageIndex]" 
+      alt="实景图" 
+      class="panorama-image"
+      @click="openLargeImage(roadImgs[currentImageIndex])"
+    /> 
+    <div>    <button 
+      @click="prevImage" 
+      class="image-nav-button" 
+      :disabled="currentImageIndex === 0"> <img :src="leftImage" alt="" /></button>
+    <button 
+      @click="nextImage" 
+      class="image-nav-button" 
+      :disabled="currentImageIndex === roadImgs.length - 1"><img :src="rightImage" alt="" /></button></div>
+
+  </div>
+
+  <div v-if="showLargeImagePopup" class="large-image-popup">
+  <div class="popupbig-background"></div>
+  <div class="popupbig-content">
+    <img :src="largeImageSrc" alt="大图" class="large-image" />
+    <img 
+      :src="cha2Image" 
+      alt="关闭" 
+      class="close-icon" 
+      @click="closeLargeImage"
+    />
+  </div>
+</div>
+</div>
+
+</div>
+</template>
+
+
+<script>
+import HeaderComponent from '@/components/Header/HeaderComponent';
+import { getRoadSectionList,screenRoadList,screenRoadChildList } from '@/api/road';
+
+export default {
+  name: 'BigScreen2',
+  components: {
+    HeaderComponent,
+  },
+  data() {
+    return {
+      headerImage: require('@/assets/header-image.png'),
+      buttonImage: require('@/assets/button.png'),
+      selectedButtonImage: require('@/assets/button-selected.png'),
+      stopImage: require('@/assets/stop.svg'),
+      popbgImage: require('@/assets/popbg.png'),
+      cha2Image: require('@/assets/cha2.png'),
+      minorpitfallImage: require('@/assets/minorpitfall.png'),
+      stopImage: require('@/assets/stop.png'), 
+      tipsImage: require('@/assets/tips.png'),
+      luzhifallImage: require('@/assets/luzhi.png'),
+      dengImage: require('@/assets/deng.png'),
+      sgaqImage: require('@/assets/sgaq.png'),
+      chaImage: require('@/assets/cha.png'),
+      leftImage: require('@/assets/lefticon.png'),
+      rightImage: require('@/assets/righticon.png'),
+      showLargeImagePopup: false, // 控制大图弹窗的显示
+      largeImageSrc: '', // 当前大图的图片地址
+      roadImgs: [require('@/assets/road1.jpg'), require('@/assets/road2.jpg'), require('@/assets/road3.jpg'), require('@/assets/road4.jpg'), require('@/assets/road5.jpg')],
+      panoramaMode: false, // 是否处于全景模式
+      panoramaCursor: require('@/assets/qj.png'), // 全景模式鼠标样式
+      panoramaImage: '', // 模拟的实景图地址
+      panoramaVisible: false, // 是否显示全景图片弹窗
+      buttonCount: 4,
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '系统管理'],
+      zoomLevel: 12, // 初始缩放等级
+      map: null, // 保存地图实例
+
+      roadList: [], // 道路列表
+      roadSectionList: [], // 路段列表
+      selectedRoadId: null, // 当前选中的道路 ID
+      selectedRoadSectionId: null, // 当前选中的路段 ID
+
+      roadPolylines: [], // 保存所有道路的折线对象
+      selectedRoadId: null, // 当前选中的道路 ID
+      selectedRoad: null, // 当前选中的道路数据
+      popupVisible: false, // 弹框是否可见
+      popupVisible2: false,
+      right: require('@/assets/right.png'),
+      left: require('@/assets/left.png'),
+      trafficSignCounts: {}, // 交通标志统计数据
+      roadMarkCounts: {}, // 路面标线统计数据
+      points: [
+  {"lng": 120.15173, "lat": 33.38557, "type": 4},
+  {"lng": 120.1516, "lat": 33.38636, "type": 1},
+  {"lng": 120.15149, "lat": 33.38692, "type": 6},
+  {"lng": 120.15147, "lat": 33.38701, "type": 1},
+  {"lng": 120.15077, "lat": 33.38944, "type": 4},
+  {"lng": 120.15045, "lat": 33.3906, "type": 5},
+  {"lng": 120.15045, "lat": 33.3906, "type": 4},
+  {"lng": 120.15043, "lat": 33.39066, "type": 6},
+  {"lng": 120.15041, "lat": 33.39075, "type": 3},
+  {"lng": 120.1504, "lat": 33.39079, "type": 5},
+  {"lng": 120.15241, "lat": 33.37878, "type": 3},
+  {"lng": 120.15279, "lat": 33.37884, "type": 1},
+  {"lng": 120.1549, "lat": 33.37925, "type": 3},
+  {"lng": 120.1555, "lat": 33.37947, "type": 3},
+  {"lng": 120.1555, "lat": 33.37947, "type": 3},
+  {"lng": 120.15591, "lat": 33.37971, "type": 1},
+  {"lng": 120.15651, "lat": 33.38015, "type": 2},
+  {"lng": 120.15665, "lat": 33.38027, "type": 3},
+  {"lng": 120.1571, "lat": 33.38061, "type": 6},
+  {"lng": 120.15758, "lat": 33.38098, "type": 6},
+  {"lng": 120.13573, "lat": 33.38753, "type": 6},
+  {"lng": 120.13582, "lat": 33.38755, "type": 1},
+  {"lng": 120.13594, "lat": 33.38757, "type": 3},
+  {"lng": 120.13618, "lat": 33.38762, "type": 2},
+  {"lng": 120.13657, "lat": 33.3877, "type": 5},
+  {"lng": 120.13724, "lat": 33.38782, "type": 6},
+  {"lng": 120.13773, "lat": 33.38792, "type": 4},
+  {"lng": 120.13779, "lat": 33.38793, "type": 6},
+  {"lng": 120.13779, "lat": 33.38793, "type": 3},
+  {"lng": 120.13778, "lat": 33.38796, "type": 1}
+],
+    markerImages: [
+      require('@/assets/minorpitfall.png'),
+      require('@/assets/stop.png'),
+      require('@/assets/tips.png'),
+      require('@/assets/luzhi.png'),
+      require('@/assets/deng.png'),
+      require('@/assets/sgaq.png'),
+    ],
+    popupVisible: false, // 弹窗是否可见
+    popupContent: {
+      type: '',
+      image: '',
+    }, // 弹窗内容
+    };
+
+    
+  },
+  methods: {
+    switchToMapMode() {
+      if (this.map) {
+        this.map.setMapType(BMAP_NORMAL_MAP); // 切换到普通地图模式
+        this.exitPanoramaMode(); // 退出全景模式
+      }
+  },
+  switchToSatelliteMode() {
+    if (this.map) {
+      this.map.setMapType(BMAP_SATELLITE_MAP); // 切换到卫星地图模式
+      this.exitPanoramaMode(); // 退出全景模式
+    }
+  },
+  switchToPanoramaMode() {
+  this.panoramaMode = true; // 标记进入全景模式
+  this.map.setDefaultCursor(`url(${this.panoramaCursor}), auto`); // 设置全景鼠标样式
+
+    // 禁用普通模式下的功能
+    this.disableNormalModeInteractions();
+  },
+    handleButtonSelected(index) {
+      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/'];
+      this.$router.push(routes[index]);
+    },
+    async initMap() {
+    if (!this.map) {
+      this.map = new BMap.Map('map');
+    }
+
+    // 设置中心点和缩放级别
+    this.map.centerAndZoom(new BMap.Point(120.168, 33.355), this.zoomLevel);
+    this.map.enableScrollWheelZoom(true);
+
+    // 应用地图样式
+    try {
+      const response = await fetch('/custom_map_config.json');
+      const mapStyle = await response.json();
+      this.map.setMapStyleV2({ styleJson: mapStyle });
+    } catch (error) {
+      console.error('Failed to load custom map style:', error);
+    }
+
+    // 加载道路数据
+    await this.drawRoads();
+
+    // 在地图上添加标注点
+    this.addMarkers();
+  },
+  handleRoadSectionSelection() {
+  const selectedSection = this.roadSectionList.find(section => section.id === this.selectedRoadSectionId);
+  if (selectedSection) {
+    // 更新选中的路段高亮
+    this.highlightSelectedRoad(selectedSection.id);
+    // 显示选中路段
+    this.drawRoad(selectedSection);
+  } else {
+    console.warn('No matching section found for the selected ID:', this.selectedRoadSectionId);
+  }
+},
+
+drawRoad(section) {
+  if (!section || !section.spoint || !section.epoint || !section.waypoints) {
+    console.error('Invalid section data:', section);
+    return;
+  }
+
+  // 清除现有的地图道路数据
+  // this.map.clearOverlays();
+
+  // 解析路段数据
+  const waypoints = JSON.parse(section.waypoints); // 转换字符串为数组
+  const points = waypoints.map(point => new BMap.Point(parseFloat(point.lng), parseFloat(point.lat)));
+  points.unshift(new BMap.Point(...section.spoint.split(',').map(Number))); // 起点
+  points.push(new BMap.Point(...section.epoint.split(',').map(Number)));   // 终点
+
+  // 绘制路段
+  const polyline = new BMap.Polyline(points, {
+    strokeColor: 'blue',
+    strokeWeight: 6,
+    strokeOpacity: 0.8,
+  });
+
+  this.map.addOverlay(polyline);
+  this.map.setViewport(points); // 自动调整视图
+},
+  addMarkers() {
+    const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯']; // 类型标签数组
+
+  this.points.forEach(({ lng, lat, type }) => {
+    const point = new BMap.Point(lng, lat);
+    const markerIcon = new BMap.Icon(this.markerImages[type - 1], new BMap.Size(30, 30));
+    const marker = new BMap.Marker(point, { icon: markerIcon });
+    console.log('1111111111111111')
+    // 动态内容示例
+    const levelText = "一级"; // 示例等级文字
+    const backgroundColor = "#FF3333"; // 示例背景颜色
+
+    const infoWindowContent = `
+      <div style="
+        position: relative;
+        width: 530px;
+        height: 550px;
+        background: url(${this.popbgImage});
+        background-repeat: no-repeat; 
+        background-size: 100% 100%;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: left;
+        border-radius: 10px;
+        box-sizing: border-box;
+      ">
+        <div style="
+          width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          padding: 20px;
+          box-sizing: border-box;
+        ">
+          <!-- 标题部分 -->
+          <h3 class="title" style="
+            font-size: 16px;
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 10px;
+            margin-bottom: 15px;
+            background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
+            border-radius: 5px;
+          ">
+            <img src="${this.right}" alt="右侧图片" style="width: 20px; height: 20px;">
+            <div style="flex: 1; text-align: center; color: #FFFFFF;">建军路 ${typeLabels[type - 1]}</div>
+            <img src="${this.left}" alt="左侧图片" style="width: 20px; height: 20px;">
+          </h3>
+
+          <!-- 信息行 -->
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
+            <div style="font-size: 14px; color: #89C0FF;">${typeLabels[type - 1]}</div>
+            <div style="
+              width: 80px;
+              height: 25px;
+              background: ${backgroundColor};
+              color: #FFFFFF;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              border-radius: 4px;
+              font-size: 12px;
+            ">${levelText}</div>
+          </div>
+
+   
+
+          <!-- 分割线 -->
+          <div style="width: 100%; height: 1px; background: #3877F2; margin-bottom: 15px;"></div>
+
+          <!-- 地址 -->
+          <div style="
+            font-size: 14px; 
+            color: #89C0FF; 
+            margin-bottom: 10px;
+            display:flex;
+            align-items: center;
+          ">
+            <span style="margin-left:10px;">江苏省盐城市亭湖区黄尖镇新街居委会，北方</span>
+          </div>
+
+          <!-- 排查时间 -->
+          <div style="
+            font-size: 14px; 
+            color: #617199; 
+            margin-bottom: 20px;
+            display:flex;
+            align-items: center;
+          ">
+            <span style="margin-left:10px;">排查时间：2023-09-07 09:00</span>
+          </div>
+
+          <!-- 图片展示 -->
+          <div style="width: 100%; height: 350px; border-radius: 5px; overflow: hidden;">
+            <img src=" alt="隐患图片" style="width: 100%; height: auto; object-fit: cover;" />
+          </div>
+        </div>
+      </div>
+    `;
+    console.log('point111',point)
+    // 创建弹窗
+
+    // var pmpont =  {lng: 120.15173, lat: 31.38557};
+
+    const pmpont = new BMap.Point(120.15173, 33.38557);
+    console.log('pmpont',pmpont)
+    const infoWindow = new BMap.InfoWindow(infoWindowContent, {
+      width: 530,
+      height: 550,
+      title: '',
+      enableMessage: false,
+    });
+
+  //   // 添加点击事件显示弹窗
+  //   marker.addEventListener('click', () => {
+  //   const pmpont = new BMap.Point(120.15173, 33.38557);
+
+  //   // 首先移动地图
+  //   this.map.panTo(pmpont);
+
+  //   // 延迟显示弹窗，等待地图移动完成
+  //   setTimeout(() => {
+  //     this.map.openInfoWindow(infoWindow, point);
+  //   }, 300); // 延迟 300ms（可以调整这个值）
+  // });
+
+  marker.addEventListener('click', () => {
+  const zoomLevel = this.map.getZoom(); // 获取当前地图缩放等级
+  console.log('zoomLevel:', zoomLevel);
+
+  // 根据缩放等级计算动态偏移量
+  const baseOffset = 0.002; // 基础偏移量（适用于 zoomLevel = 18）
+  const offsetFactor = Math.pow(2, 18 - zoomLevel); // 动态调整偏移比例
+  const adjustedOffset = baseOffset * offsetFactor;
+
+  // 计算偏移点
+  const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
+
+  // 打开弹窗
+  this.map.openInfoWindow(infoWindow, point);
+
+  // 延迟平移视图到偏移点，使弹窗居中
+    setTimeout(() => {
+      this.map.panTo(offsetPoint);
+    }, 300); // 延迟 300ms
+  });
+
+  // 将标记添加到地图
+  this.map.addOverlay(marker);
+    });
+  },
+
+  showMarkerPopup(type) {
+  const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯'];
+
+  if (type >= 1 && type <= 6) {
+    this.popupContent = {
+      type: typeLabels[type - 1],
+      image: this.markerImages[type - 1],
+    };
+    this.popupVisible2 = true;
+  } else {
+    console.error('无效的标志类型:', type);
+  }
+},
+  closePopup() {
+    this.popupVisible = false;
+  },
+
+  closePopup2(){
+    this.popupVisible2 = false;
+  },
+  async drawRoads() {
+  try {
+    const res = await getRoadSectionList();
+    if (res.code === 0) {
+      const roads = res.data.data;
+      this.roadList = roads; // 保存道路数据到下拉框
+
+      roads.forEach((road) => {
+        const waypoints = JSON.parse(road.waypoints);
+        const points = waypoints.map((point) => new BMap.Point(point.lng, point.lat));
+        points.unshift(new BMap.Point(...road.spoint.split(',').map(Number)));
+        points.push(new BMap.Point(...road.epoint.split(',').map(Number)));
+
+        const polyline = new BMap.Polyline(points, {
+          strokeColor: 'rgba(56, 119, 242, 0.3)',
+          strokeWeight: 6,
+          strokeOpacity: 0.8,
+          zIndex: 2,
+        });
+
+        this.map.addOverlay(polyline);
+        this.roadPolylines.push({ id: road.id, polyline });
+
+        // 点击事件
+        polyline.addEventListener('click', () => {
+          this.handleRoadSelection(road.id);
+        });
+      });
+
+      // 默认选中第一个道路
+      if (roads.length > 0) {
+        this.selectedRoadSectionId = roads[0].id;
+        this.handleRoadSelection(this.selectedRoadSectionId);
+      }
+    } else {
+      console.error('Failed to fetch road data:', res.msg);
+    }
+  } catch (error) {
+    console.error('Error fetching road data:', error);
+  }
+},
+async fetchRoadList() {
+  try {
+    const res = await screenRoadList();
+    if (res.code === 0) {
+      this.roadList = res.data.road;
+      // 自动选中第一个道路
+      if (this.roadList.length > 0) {
+        this.selectedRoadId = this.roadList[0].id;
+        this.fetchRoadSections(); // 加载对应的路段数据
+      }
+    } else {
+      console.error('Failed to fetch road list:', res.msg);
+    }
+  } catch (error) {
+    console.error('Error fetching road list:', error);
+  }
+},
+async fetchRoadSections() {
+  if (!this.selectedRoadId) {
+    console.error('Error: selectedRoadId is undefined');
+    return;
+  }
+  // try {
+    console.log(`Fetching road sections for road ID: ${this.selectedRoadId}`);
+    const res = await screenRoadChildList(this.selectedRoadId);
+    if (res && res.code === 0) {
+      // 取出 section 数据
+      this.roadSectionList = res.data.section || [];
+      if (this.roadSectionList.length > 0) {
+        this.selectedRoadSectionId = this.roadSectionList[0].id;
+        this.handleRoadSectionSelection(); // 加载地图展示
+      } else {
+        console.warn('No road sections found for the selected road.');
+      }
+    } else {
+      
+    }
+  // } catch (error) {
+  //   console.error('Error fetching road section list:', error);
+  // }
+},
+handleRoadSelection(selectedRoadId) {
+  console.log('Road selected:', selectedRoadId);
+
+  // 更新下拉框的选中状态
+  this.selectedRoadSectionId = selectedRoadId;
+
+  // 更新地图上的路段状态
+  this.highlightSelectedRoad(selectedRoadId);
+
+  const selectedSection = this.roadSectionList.find(section => section.id === selectedRoadId);
+  if (selectedSection) {
+    this.drawRoad(selectedSection); // 绘制选中的路段
+  } else {
+    console.warn('No matching section found for the selected ID:', selectedRoadId);
+  }
+},
+highlightSelectedRoad(selectedRoadId) {
+  this.roadPolylines.forEach(({ id, polyline }) => {
+    if (id === selectedRoadId) {
+      // 高亮选中的路段
+      polyline.setStrokeColor('#3877F2');
+      polyline.setStrokeWeight(8);
+    } else {
+      // 恢复其他路段的默认样式
+      polyline.setStrokeColor('rgba(56, 119, 242, 0.3)');
+      polyline.setStrokeWeight(6);
+    }
+  });
+},
+    updateStatistics(road) {
+      // 模拟统计数据
+      this.trafficSignCounts = {
+        '警告标志': road.trafficWarning || 10,
+        '禁令标志': road.trafficProhibition || 15,
+        '指示标志': road.trafficIndication || 8,
+        '指路标志': road.trafficDirection || 20,
+        '施工安全标志': road.trafficConstruction || 5,
+      };
+
+      this.roadMarkCounts = {
+        '白色虚线': road.whiteDashed || 30,
+        '白色实线': road.whiteSolid || 25,
+        '黄色虚线': road.yellowDashed || 12,
+        '黄色实线': road.yellowSolid || 10,
+        '双白虚线': road.doubleWhiteDashed || 5,
+        '双黄实线': road.doubleYellowSolid || 8,
+        '黄色虚实线': road.yellowDashedSolid || 7,
+        '双白实线': road.doubleWhiteSolid || 6,
+      };
+    },
+    showRoadPopup(road) {
+      this.selectedRoad = {
+        id: road.id,
+        name: road.name,
+        length: road.length,
+        road_name: road.road_name,
+        town_name: road.town_name,
+        type_name: road.type_name,
+        spoint: road.spoint,
+        epoint: road.epoint,
+      };
+      this.popupVisible = true;
+    },
+
+    formatCoordinates(coordinates) {
+      if (!coordinates) return '暂无';
+      const [lng, lat] = coordinates.split(',').map(coord => parseFloat(coord).toFixed(3));
+      return `${lng}, ${lat}`;
+    },
+    closePopup() {
+      this.popupVisible = false;
+    },
+    // closePopup() {
+    //   this.popupVisible = false;
+    // },
+    exitPanoramaMode() {
+      this.panoramaMode = false; // 标记退出全景模式
+      this.map.setDefaultCursor('default'); // 恢复鼠标样式
+
+      // 启用普通模式下的功能
+      this.enableNormalModeInteractions();
+    },
+    disableNormalModeInteractions() {
+  // 禁用道路信息弹窗逻辑
+      this.roadPolylines.forEach(({ polyline }) => {
+        polyline.removeEventListener('click', this.handleRoadSelection); // 确保移除事件
+      });
+
+      // 禁用标记点击事件
+      this.map.getOverlays().forEach((overlay) => {
+        if (overlay instanceof BMap.Marker) {
+          overlay.removeEventListener('click'); // 移除所有点击事件
+        }
+      });
+    },
+    enableNormalModeInteractions() {
+      this.roadPolylines.forEach(({ polyline }) => {
+        polyline.addEventListener('click', () => {
+          if (!this.panoramaMode) this.handleRoadSelection(); // 仅在普通模式下执行
+        });
+      });
+
+      this.map.getOverlays().forEach((overlay) => {
+        if (overlay instanceof BMap.Marker) {
+          overlay.addEventListener('click', (e) => {
+            if (!this.panoramaMode) {
+              const point = e.point;
+              console.log('Marker clicked at:', point);
+              // 添加普通模式下的逻辑
+            }
+          });
+        }
+      });
+    },
+    addPanoramaClickListener() {
+    this.map.addEventListener('click', (e) => {
+      if (!this.panoramaMode) return; // 普通模式下不执行
+
+      const { lng, lat } = e.point;
+      console.log(`全景模式点击点：经度 ${lng}, 纬度 ${lat}`);
+
+      // 模拟获取最近实景图
+      this.currentImageIndex = 0; // 重置为第一张图片
+      this.panoramaVisible = true; // 显示全景图片弹窗
+    });
+  },
+  nextImage() {
+    console.log('nextImage')
+    if (this.currentImageIndex < this.roadImgs.length - 1) {
+    this.currentImageIndex++;
+    console.log('Current Image Index:', this.currentImageIndex); // 调试输出
+    this.$forceUpdate(); // 强制更新
+    }
+  },
+
+  prevImage() {
+    if (this.currentImageIndex > 0) {
+      this.currentImageIndex--;
+      this.$forceUpdate(); // 强制更新
+    }
+  },
+    closePanoramaImage() {
+      this.panoramaVisible = false;
+    },
+    enableNormalModeListeners() {
+    // 启用道路信息弹窗
+    // this.roadPolylines.forEach(({ polyline }) => {
+    //   polyline.addEventListener('click', () => {
+    //     this.handleRoadSelection();
+    //   });
+    // });
+    // // 启用标记点击事件
+    // this.map.getOverlays().forEach((overlay) => {
+    //   if (overlay instanceof BMap.Marker) {
+    //     overlay.enableClicking();
+    //   }
+    // });
+  },
+  openLargeImage(imageSrc) {
+    this.largeImageSrc = imageSrc; // 设置大图地址
+    this.showLargeImagePopup = true; // 显示弹窗
+  },
+  closeLargeImage() {
+    this.showLargeImagePopup = false; // 隐藏弹窗
+  },
+  },
+  mounted() {
+    this.fetchRoadList(); // 加载道路列表
+    this.initMap();
+
+    this.addPanoramaClickListener(); // 实景地图监听
+  this.enableNormalModeListeners(); // 初始化普通模式监听
+  },
+};
+</script>
+<style scoped>
+.big-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100vh;
+}
+
+.map-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.fixed-div {
+  position: absolute;
+  top: 120px;
+  left: 10px;
+  width: 446px;
+  height: 136px;
+  background: linear-gradient(135deg, #1f2a51, #0b1224);
+  border-radius: 8px;
+  border: 1px solid #3877F2;
+  padding: 20px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* 添加阴影 */
+}
+
+.label {
+  color: white;
+  margin-bottom: 10px;
+  font-size: 14px; /* 增大字体 */
+  font-weight: 500;
+}
+
+.styled-select {
+  width: 330px;
+  height: 38px;
+  background: #1a2d52; /* 修改背景色为深色 */
+  border-radius: 6px;
+  border: 1px solid #3877F2;
+  color: white;
+  padding: 8px;
+  font-size: 16px; /* 增大字体，增加可读性 */
+  transition: all 0.3s ease;
+}
+
+.styled-select:focus {
+  border-color: #6a9fff; /* 聚焦时边框高亮 */
+  outline: none;
+  box-shadow: 0 0 8px rgba(56, 119, 242, 0.8);
+}
+
+</style>
+<style scoped>
+.statistics-div {
+  position: absolute;
+  bottom: 50px;
+  left: 10px;
+  width: 446px;
+  background: linear-gradient(135deg, #1f2a51, #0b1224);
+  border-radius: 8px;
+  border: 1px solid #3877F2;
+  padding: 20px;
+  z-index: 1000;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); /* 添加阴影 */
+}
+
+.statistics-title {
+  font-size: 18px; /* 增大字体 */
+  font-weight: 600;
+  margin-bottom: 10px;
+  text-align: center; /* 居中 */
+  color: #ffcc00; /* 统计框标题颜色 */
+}
+
+.statistics-subtitle {
+  font-size: 16px; /* 增大副标题字体 */
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: #5c9fff; /* 副标题颜色 */
+}
+
+.statistics-list {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  font-size: 14px;
+  line-height: 1.8; /* 增加行间距，避免文字过于拥挤 */
+}
+
+.statistics-list li {
+  color: #cce4ff; /* 设置列表项文字颜色 */
+  padding: 5px 0;
+}
+
+.statistics-list li:hover {
+  color: #ffcc00; /* 悬停时的字体颜色 */
+}
+.section-top {
+  background-image: url('../../assets/sidebarTitle.png');
+  background-size: cover;
+  background-position: center;
+  color: white;
+  position: absolute;
+  top: 50px;
+  left: 10px;
+}
+.title {
+  width: 398px;
+  height: 32px;
+  background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
+
+}
+
+.popup {
+  position: fixed;
+  top: 50%;   /* 设置距离屏幕顶部50% */
+  left: 50%;  /* 设置距离屏幕左侧50% */
+  transform: translate(-50%, -50%); /* 中心对齐 */
+  width: 400px;
+  height: 540px;
+  /* background-color: white; */
+  /* border-radius: 10px; */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  z-index: 1001;
+}
+
+
+.custom-icon {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  text-align: center;
+  line-height: 40px;
+  background: transparent;
+  border-radius: 50%;
+  border: 2px solid #8A8A8A; /* 灰色描边 */
+}
+
+.custom-icon .icon {
+  font-size: 24px;
+  color: #FF0000; /* 图标颜色 */
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2); /* 为图标增加立体效果 */
+}
+
+.custom-hazard-box {
+  position: fixed;
+  left: 470px;
+  background: rgba(4, 18, 50, 0.6);
+  /* border: 1px solid #3877F2; */
+  border-radius: 4px;
+  padding: 15px;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+  color: white;
+  width: 156px;
+  margin-top: 10px;
+}
+
+.custom-status-box {
+  bottom: 280px;
+}
+
+.custom-hazard-box {
+  bottom: 37px;
+}
+
+.custom-box-title {
+  font-size: 12px;
+  /* background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%); */
+  color: #89C0FF;
+  line-height: 17px;
+}
+
+
+
+.popup-close-btn {
+  margin-top: 15px;
+  padding: 8px 20px;
+  background: #3877F2;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+</style>
+
+<style >
+
+.custom-icon .icon {
+  font-size: 24px;
+  color: #FF0000; /* 图标颜色 */
+}
+</style>
+
+<style scoped>
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 400px;
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 10px;
+  padding: 20px;
+  color: white;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.popup-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('../../assets/popbg.png');
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
+.popup {
+  /* clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 50% 100%, 0% 90%); */
+  /* background: url('../../assets/popbg2.png') no-repeat center; */
+  background-size: contain;
+  background-color: transparent;
+}
+.popup-background2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* background-image: url('../../assets/popbg2.png'); */
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+}
+.popup-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.road-info {
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 10px;
+  flex-direction: column
+}
+
+.separator {
+  width: 100%;
+  height: 1px;
+  background-color: #3877F2;
+  margin: 15px 0;
+}
+
+.popup-close-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 8px 20px;
+  background: #3877F2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.title img {
+    width: 20px;
+    height: 20px;
+}
+
+.mmfont {
+    flex: 1;
+    text-align: center;
+    color: #FFFFFF;
+}
+
+.road-info {
+    display: flex;
+    justify-content: space-between;
+    width: 335px;
+    margin-top: 10px;
+}
+
+.separator {
+    width: 100%;
+    height: 1px;
+    border: 1px solid #3877F2;
+    margin-top: 10px;
+}
+
+.statistics-list {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  display: flex;
+  flex-wrap: wrap; /* 自动换行 */
+  gap: 20px; /* 每个项目之间的间距 */
+  justify-content: flex-start; /* 水平分布，保持均匀 */
+}
+
+.statistics-list li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #cce4ff;
+  width: calc(33.33% - 20px); /* 每个项目宽度占 1/3 减去间距 */
+  box-sizing: border-box;
+}
+
+.statistics-list .count {
+  font-size: 24px; /* 大字号 */
+  font-weight: bold; /* 加粗 */
+  color: #ffffff; /* 白色数值 */
+}
+
+.statistics-list .type {
+  font-size: 14px; /* 常规字号 */
+  color: #89C0FF; /* 常规文本颜色 */
+}
+
+.map-mode-switch {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.switch-button {
+  width: 80px;
+  height: 40px;
+  background: linear-gradient(135deg, #1f2a51, #0b1224);
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  border: 1px solid #3877F2;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+  line-height: 40px;
+  transition: all 0.3s ease;
+}
+
+.switch-button:hover {
+  background: #3877F2;
+  color: white;
+}
+
+.panorama-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* background: rgba(0, 0, 0, 0.8); */
+  padding: 20px;
+  border-radius: 10px;
+  z-index: 1001;
+  color: white;
+  /* box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); */
+  /* clip-path: polygon(0% 0%, 100% 0%, 100% 90%, 50% 100%, 0% 90%); */
+  background: url('../../assets/popbg2.png') no-repeat center;
+  background-size: contain;
+  background-color: transparent;
+}
+
+.panorama-popup .popup-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.panorama-popup .close-button {
+  background: #3877F2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.panorama-popup .panorama-image {
+  width: 500px;
+  height: 230px;
+  border-radius: 5px;
+}
+
+
+.panorama-content {
+  /* display: flex; */
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.image-nav-button {
+  background: #3877F2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.image-nav-button:disabled {
+  background: #aaa; /* 禁用状态颜色 */
+  cursor: not-allowed;
+}
+
+</style>
+<style scoped>
+.large-image-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.popupbig-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: -1;
+}
+
+.popupbig-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.large-image {
+  /* max-width: 90%; */
+  width: 1200px;
+  /* max-height: 80%; */
+  /* border-radius: 10px; */
+}
+
+.close-icon {
+  position: absolute;
+  top: -20px;
+  right: -35px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+</style>
