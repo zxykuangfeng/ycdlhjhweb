@@ -69,19 +69,21 @@
     <div class="custom-hazard-box">
       <h3 class="custom-box-title">隐患等级</h3>
       <div class="custom-hazard-indicators">
-        <div class="custom-hazard-item">
+        <div class="custom-hazard-item" :class="{ selected: currentYhdj === 10 }"  @click="filterPitfalls(10)">
           <img :src="require('@/assets/minorpitfall.png')" alt="轻微隐患" />
           <span>轻微隐患</span>
         </div>
-        <div class="custom-hazard-item">
+        <div class="custom-hazard-item" :class="{ selected: currentYhdj === 11 }"  @click="filterPitfalls(11)">
           <img :src="require('@/assets/generalpitfall.png')" alt="一般隐患" />
           <span>一般隐患</span>
         </div>
-        <div class="custom-hazard-item">
+        <div class="custom-hazard-item"         :class="{ selected: currentYhdj === 12 }" 
+ @click="filterPitfalls(12)">
           <img :src="require('@/assets/seriouspitfall.png')" alt="重大隐患" />
           <span>重大隐患</span>
         </div>
-        <div class="custom-hazard-item">
+        <div class="custom-hazard-item"         :class="{ selected: currentYhdj === 13 }" 
+ @click="filterPitfalls(13)">
           <img :src="require('@/assets/majorpitfall.png')" alt="特大隐患" />
           <span>特大隐患</span>
         </div>
@@ -96,7 +98,7 @@
       @draw-polygon="drawPolygon"
       :currentZoom.sync="zoomLevel"
       />
-      <right-sidebar :selected-street-data="selectedStreetData" />
+      <right-sidebar :selected-street-data="selectedStreetData" @hazard-clicked="handleHazardClick"/>
   </div>
 </template>
 
@@ -128,7 +130,7 @@ export default {
       popupVisible: false, // 控制弹窗显示
       popupContent: '', // 弹窗内容
       buttonCount: 4, // Number of buttons
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '系统管理'], // Button labels
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'], // Button labels
       zoomLevel: 15, // 初始缩放等级
       map: null, // 保存地图实例
       dialogTitle: '',
@@ -165,7 +167,9 @@ export default {
       },
       showFullImage: false, // 控制大图显示
       fullImageSrc: '', // 存储大图的路径
-      selectedStreetData: null // 存储当前选中的街道数据
+      selectedStreetData: null, // 存储当前选中的街道数据
+      currentYhdj:null,
+      currentYhlb:null,
     }
   },
   methods: {
@@ -262,7 +266,18 @@ export default {
   } else {
     console.warn('No valid points to set viewport.');
   }
-},
+    },
+    handleHazardClick(item) {
+      console.log("Clicked Hazard:", item);
+      // 在这里调用父组件的方法，比如更新地图标注
+      this.highlightHazardOnMap(item);
+    },
+    highlightHazardOnMap(item) {
+
+      this.currentYhlb = item.yhlb;
+
+       this.loadPitfalls();
+    },
     parsePolygon(polygonData) {
       const polygons = [];
       if (polygonData.startsWith('MULTIPOLYGON')) {
@@ -417,8 +432,14 @@ export default {
     //隐患标注
     async loadPitfalls() {
       try {
-        const res = await getPitfallList({limit:120});
-
+        const query = { limit: 1000 };
+        if (this.currentYhdj) query.yhdj = this.currentYhdj;
+        if (this.currentYhlb) query.yhlb = this.currentYhlb;
+        
+        const res = await getPitfallList(query);
+        // const res = await getPitfallList(query);
+        console.log(2222)
+        console.log(res)
         if (res.code === 0) {
           this.pitfallList = res.data.data;
 
@@ -638,7 +659,17 @@ export default {
             return marker;
           });
           // 初始化点聚合
-      this.markerClusterer = new BMapLib.MarkerClusterer(this.map, { markers });
+          if (this.markerClusterer) {
+        this.markerClusterer.clearMarkers();
+        this.markerClusterer.addMarkers(markers);
+          } else {
+            this.markerClusterer = new BMapLib.MarkerClusterer(this.map, { markers });
+          }
+
+          // 更新地图视野，使所有标记可见
+          // if (markers.length > 0) {
+          //   this.map.setViewport(markers.map(m => m.getPosition()));
+          // }
         } else {
           console.error('Failed to fetch pitfall data:', res.msg);
         }
@@ -710,7 +741,34 @@ export default {
     handleStreetChange(streetData) {
       this.selectedStreetData = { ...streetData };
       console.log('父组件更新 selectedStreetData:', this.selectedStreetData);
+    },
+    async filterPitfalls(yhdj) {
+      this.currentYhdj = yhdj;
+      await this.loadPitfalls();
+    },
+    updateMapMarkers() {
+      if (this.markerClusterer) {
+        this.markerClusterer.clearMarkers();
+      }
+      const markers = this.pitfallList.map(item => {
+        const [lng, lat] = item.point.split(',').map(Number);
+        const point = new BMap.Point(lng, lat);
+        const iconSrc = require(`@/assets/${this.getPitfallIcon(item.yhdj)}`);
+        const myIcon = new BMap.Icon(iconSrc, new BMap.Size(30, 30));
+        return new BMap.Marker(point, { icon: myIcon });
+      });
+      this.markerClusterer = new BMapLib.MarkerClusterer(this.map, { markers });
+    },
+    getPitfallIcon(yhdj) {
+      const icons = {
+        10: 'minorpitfall.png',
+        11: 'generalpitfall.png',
+        12: 'seriouspitfall.png',
+        13: 'majorpitfall.png'
+      };
+      return icons[yhdj] || 'pitfall.png';
     }
+
   },
   mounted() {
     this.initMap();
@@ -841,6 +899,7 @@ export default {
   gap: 10px;
   font-size: 12px;
   margin-bottom: 10px;
+  padding: 2px;
 }
 
 .custom-hazard-item img {
@@ -1013,5 +1072,12 @@ export default {
 .scale-popup-enter-to, .scale-popup-leave-from {
   opacity: 1;
   transform: scale(1) translateX(-50%);
+}
+
+.custom-hazard-item.selected {
+  background-color: rgba(56, 119, 242, 0.3);
+  color: #ffffff;
+  border: 1px solid #3877F2;
+  padding:2px;
 }
 </style>

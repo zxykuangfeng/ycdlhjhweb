@@ -6,7 +6,7 @@
   import echarts from 'echarts'
   require('echarts/theme/macarons') // echarts theme
   import resize from './mixins/resize'
-  
+  import { adminCount } from "@/api/road";
   export default {
     mixins: [resize],
     props: {
@@ -56,6 +56,7 @@
       this.$nextTick(() => {
         this.initChart()
       })
+      this.fetchYhCount()
     },
     beforeDestroy() {
       if (!this.chart) {
@@ -68,6 +69,12 @@
       initChart() {
         this.chart = echarts.init(this.$el, 'macarons')
         this.setOptions(this.chartData)
+      },
+      fetchYhCount(){
+        const response =  adminCount();
+        console.log('隐患统计数据:', response);
+
+
       },
       setOptions({ totalHazards, fixedHazards } = {}) {
         this.chart.setOption({

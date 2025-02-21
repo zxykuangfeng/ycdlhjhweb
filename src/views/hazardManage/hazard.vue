@@ -9,7 +9,7 @@
           :value="value"
         />
       </el-select>
-      <!-- <el-select v-model="listQuery.yhlb" placeholder="隐患类别" class="filter-item" clearable>
+      <el-select v-model="listQuery.yhlb" placeholder="隐患类别" class="filter-item" clearable>
         <el-option
           v-for="(label, value) in yhlbOptions"
           :key="value"
@@ -24,7 +24,7 @@
           :label="label"
           :value="value"
         />
-      </el-select> -->
+      </el-select>
       <el-select v-model="listQuery.yhdj" placeholder="隐患等级" class="filter-item" clearable>
         <el-option
           v-for="(label, value) in yhdjOptions"
@@ -36,6 +36,15 @@
       <el-select v-model="listQuery.yhly" placeholder="隐患来源" class="filter-item" clearable>
         <el-option
           v-for="(label, value) in yhlyOptions"
+          :key="value"
+          :label="label"
+          :value="value"
+        />
+      </el-select>
+
+      <el-select v-model="listQuery.status" placeholder="状态" class="filter-item" clearable>
+        <el-option
+          v-for="(label, value) in statusOptions"
           :key="value"
           :label="label"
           :value="value"
@@ -64,8 +73,20 @@
       <el-table-column type="selection" width="55" align="center" />
       <el-table-column label="ID" prop="id" align="center" width="80" />
       <el-table-column label="隐患名称" prop="yhlb_name" align="center" min-width="150px" />
-      <el-table-column label="道路名称" prop="name" align="center" min-width="150px" />
-      <el-table-column label="隐患位置" prop="pdesc" align="center" min-width="120px" />
+      <el-table-column label="道路名称" prop="road_name" align="center" min-width="150px" />
+      <el-table-column label="缩略图" align="center" width="120">
+        <template slot-scope="{ row }">
+          <img
+            v-if="row.imgs"
+            :src="`http://roadserver.lysoo.com:8081/${row.imgs}`"
+            alt="缩略图"
+            @click="openLargeImage(row.imgs)"
+            style="width: 80px; height: 50px; object-fit: cover; border-radius: 4px;"
+          />
+          <span v-else>暂无图片</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="隐患位置" prop="address" align="center" min-width="120px" />
       <el-table-column label="隐患类别" prop="yhlb_name" align="center" min-width="120px" />
       <el-table-column label="隐患检查项" prop="yhjcx_name" align="center" min-width="120px" />
       <el-table-column label="隐患等级" prop="yhdj_name" align="center" min-width="100px" />
@@ -148,14 +169,61 @@
           :value="value.id"
         />
       </el-select>
+      <el-button type="danger" @click="removePitfall">移除</el-button>
+
+
         <el-button type="primary" style="margin-left: 10px;" @click="assignTeam">确认派发</el-button>
       </div>
     </el-dialog>
+    <el-dialog
+  title="确认删除"
+  :visible.sync="removeDialogVisible"
+  width="400px"
+  :close-on-click-modal="false"
+>
+  <p style="text-align: center; font-size: 16px;">确定要移除该隐患吗？此操作不可恢复！</p>
+  <span slot="footer" class="dialog-footer">
+    <el-button @click="removeDialogVisible = false">取消</el-button>
+    <el-button type="danger" @click="removePitfall">确认</el-button>
+  </span>
+</el-dialog>
+
+<div v-if="showLargeImagePopup" class="large-image-popup">
+  <div class="popupbig-background"></div>
+  <div class="popupbig-content">
+     <div style="display: flex;align-items: center;">    
+      <!-- <button 
+      @click="prevImage" 
+      class="image-nav-button" 
+      style="margin-right: 20px;background: transparent"
+      > <img :src="leftImage" alt="" /></button> -->
+
+    <img :src="largeImageSrc" alt="大图" class="large-image" />
+    <!-- <img 
+      :src="cha2Image" 
+      alt="关闭" 
+      class="close-icon" 
+      @click="closeLargeImage"
+    /> -->
+   
+<!-- 
+    <button 
+      @click="nextImage" 
+      class="image-nav-button" 
+      style="margin-left: 20px;background: transparent"
+      ><img :src="rightImage" alt="" /></button> -->
+</div>
+    <div class="close-button" style="  top: -40px;
+  right: -55px;" @click="closeLargeImage">×</div>
+
   </div>
+</div>
+  </div>
+  
 </template>
 
 <script>
-import { getPitfallList, approvePitfall, rejectPitfall, getPitfallDetail, assignRepairTeam,worksMember,worksReason} from '@/api/road';
+import { getPitfallList, approvePitfall, rejectPitfall, getPitfallDetail, assignRepairTeam,worksMember,worksReason,deletePitfall} from '@/api/road';
 import { getUser } from '@/api/user'
 import waves from '@/directive/waves';
 import Pagination from '@/components/Pagination';
@@ -184,13 +252,53 @@ export default {
         yhlb: '',
         yhjcx: '',
         yhdj: '',
-        yhly: ''
+        yhly: '',
+        status:''
       },
-      yhcjOptions: ['标牌', '标线', '曲率半径','道路视距'],
-      yhdjOptions: ['轻微隐患', '一般隐患', '重大隐患', '特大隐患'],
-      yhlyOptions: ['自动识别', '大队上报', '支队上报'],
+      yhcjOptions: {
+        1: '普通路段',
+        2: '临水路段',
+        3: '学校路段',
+        4: '路口',
+      },
+      yhdjOptions: {
+        10: '轻微隐患',
+        11: '一般隐患',
+        12: '重大隐患',
+        13: '特大隐患',
+      },
+      yhlyOptions: {
+        14: '自动识别',
+        15: '大队上报',
+        16: '支队上报',
+      },
+      yhjcxOptions: {
+        5: '平面线型',
+        6: '曲面半径',
+        7: '道路标牌',
+        8: '路面标线',
+        9: '路口视距',
+        23: '学校路段',
+        24: '临水路段',
+        25: '急弯路段',
+        26: '交叉口',
+        27: '地面设施',
+        28: '交安设施',
+        29: '行车视距',
+      },
+      statusOptions:{
+        1: '待审核',
+        2: '待派发',
+        3: '已驳回',
+        4: '待施工',
+        5: '已修复',
+      },
+
       reasonDialogVisible: false,
       rejectReason: null,
+      removeDialogVisible: false, // 控制移除弹窗
+      largeImageSrc:'',
+      showLargeImagePopup:false
     };
   },
   created() {
@@ -222,6 +330,52 @@ export default {
           this.userTotal = 0;
         }
         this.listLoading = false;
+      });
+    },
+    confirmRemove() {
+      if (!this.selectedPitfall.id) {
+        this.$message.warning('请选择要移除的隐患');
+        return;
+      }
+      this.removeDialogVisible = true;
+    },
+    openLargeImage(imageSrc) {
+      console.log(222222222)
+      const fullImageUrl = `http://roadserver.lysoo.com:8081/${imageSrc}`;
+      this.largeImageSrc = fullImageUrl; // 设置大图地址
+      this.showLargeImagePopup = true; // 显示弹窗
+
+      console.log(this.showLargeImagePopup)
+    },
+    closeLargeImage() {
+    this.showLargeImagePopup = false; // 隐藏弹窗
+  },
+    // 确认删除
+    removePitfall() {
+      if (!this.selectedPitfall.id) {
+        this.$message.warning('隐患 ID 为空');
+        return;
+      }
+
+      this.$confirm('此操作将永久删除该隐患, 是否继续?', '警告', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        deletePitfall(this.selectedPitfall.id).then(res => {
+          if (res.code === 0) {
+            this.$message.success('移除成功');
+            this.dialogVisible = false; // 关闭详情窗口
+            this.removeDialogVisible = false; // 关闭删除确认窗口
+            this.getList(); // 重新获取列表
+          } else {
+            this.$message.error(res.msg || '移除失败');
+          }
+        }).catch(error => {
+          this.$message.error(error.message || '请求失败');
+        });
+      }).catch(() => {
+        this.$message.info('已取消删除');
       });
     },
     handleFilter() {
@@ -346,4 +500,56 @@ export default {
   }
 }
 
+</style>
+<style scoped>
+.large-image-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.popupbig-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: -1;
+}
+
+.popupbig-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.large-image {
+  /* max-width: 90%; */
+  width: 1200px;
+  /* max-height: 80%; */
+  /* border-radius: 10px; */
+}
+
+.close-icon {
+  position: absolute;
+  top: -40px;
+  right: -55px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+
+.search-input::placeholder {
+  color: rgb(255, 255, 255)fff; /* 设置占位符的颜色 */
+  font-style: italic; /* 可选：设置占位符的字体样式 */
+}
 </style>

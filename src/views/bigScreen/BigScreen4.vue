@@ -16,7 +16,19 @@
       <select id="road-select" v-model="selectedRoadId" @change="handleRoadSelectionByRoad" class="styled-select">
         <option v-for="road in roadList" :key="road.id" :value="road.id">{{ road.name }}</option>
       </select>
+
+      <label for="safety-select" class="label">安全等级:</label>
+      <select id="safety-select" v-model="selectedSafetyLevel" @change="handleRoadSelectionByRoad" class="styled-select">
+        <option value="">全部</option>
+        <option value="1">良好</option>
+        <option value="2">轻微隐患</option>
+        <option value="3">严重隐患</option>
+      </select>
     </div>
+<!-- 
+    <div class="fixed-div">
+ 
+    </div> -->
     <!-- 左侧新增统计框 -->      
     <div class="section-mid">
       <div class="tab-container">
@@ -47,7 +59,7 @@
       </div>
       <div 
         class="statistics-row" 
-        v-for="(item, index) in paginatedRoadData" 
+        v-for="(item, index) in roadScores" 
         :key="index"
         :class="{ 'row-alternate': index % 2 === 1 }"
         @click="handleRoadSelection(item)"
@@ -63,7 +75,7 @@
           {{ getSafetyLevel(item.score).text }}
         </div>
       </div>
-      <div class="pagination">
+      <!-- <div class="pagination">
         <button :disabled="roadCurrentPage === 1" @click="changeRoadPage(roadCurrentPage - 1)">
           <i class="el-icon-arrow-left"></i>
         </button>
@@ -78,7 +90,7 @@
         <button :disabled="roadCurrentPage === totalRoadPages" @click="changeRoadPage(roadCurrentPage + 1)">
           <i class="el-icon-arrow-right"></i>
         </button>
-      </div>
+      </div> -->
     </div>
 
     <!-- 路口内容 -->
@@ -91,7 +103,7 @@
       </div>
       <div 
         class="statistics-row" 
-        v-for="(item, index) in paginatedIntersectionData" 
+        v-for="(item, index) in intersectionScores" 
         :key="index"
         :class="{ 'row-alternate': index % 2 === 1 }"
         @click="handleIntersectionSelection(item)"
@@ -107,27 +119,26 @@
           {{ getSafetyLevel(item.score).text }}
         </div>
       </div>
-      <div class="pagination">
-        <button :disabled="intersectionCurrentPage === 1" @click="changeIntersectionPage(intersectionCurrentPage - 1)">
-          <i class="el-icon-arrow-left"></i>
-        </button>
-        <span v-for="page in totalIntersectionPages" :key="page">
-          <button
-            :class="{ active: intersectionCurrentPage === page }"
-            @click="changeIntersectionPage(page)"
-          >
-            {{ page }}
-          </button>
-        </span>
-        <button :disabled="intersectionCurrentPage === totalIntersectionPages" @click="changeIntersectionPage(intersectionCurrentPage + 1)">
-          <i class="el-icon-arrow-right"></i>
-        </button>
-      </div>
     </div>
     <right-ping-fen-sidebar 
       :selectedData="selectedData"
       :selectedType="selectedType"
+      @item-selected="handleItemSelection"
     />
+    <div class="hazard-info" v-if="selectedItem">
+    <div class="hazard-header">
+      <div style="margin-bottom: 10px;font-weight: 300;">隐患详情</div>
+      <button style="margin-bottom: 10px" class="close-btn" @click="selectedItem = null">×</button>
+    </div>
+    <p><strong>类别:</strong> {{ selectedItem.yhlb_name }}</p>
+    <p><strong>安全标准:</strong> {{ selectedItem.testing_standards }}</p>
+    <p><strong>隐患描述:</strong> <span class="hazard-desc">{{ selectedItem.yhdesc }}</span></p>
+    <p><strong>排查时间:</strong> {{ selectedItem.ctime }}</p>
+    <p><strong>位置:</strong> {{ selectedItem.address || '未知' }}</p>
+    <div class="hazard-image-container">
+      <img :src="'http://roadserver.lysoo.com:8081/' + selectedItem.imgs" alt="隐患图片">
+    </div>
+  </div>
   </div>
 </template>
 <script>
@@ -155,7 +166,7 @@ export default {
       sgaqImage: require('@/assets/sgaq.png'),
       lukoImage: require('@/assets/luko.png'),
       buttonCount: 4,
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '系统管理'],
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'],
       zoomLevel: 12, // 初始缩放等级
       map: null, // 保存地图实例
       markers: [], // 存储路口标注
@@ -182,6 +193,10 @@ export default {
       selectedRoadId: null, // 当前选中的道路ID
       selectedType: null,
       selectedData: null, // 当前选中的数据
+      selectedSafetyLevel: "", // 存储当前选中的安全等级
+      selectedHazard: null,
+      selectedItem: null,
+      infoWindow: null
     };  
   },
   methods: {
@@ -193,6 +208,64 @@ export default {
     } else {
       return { text: '严重隐患', color: '#D30C0F' }; // 红色
     }
+  },
+  handleItemSelection(item) { 
+    console.log('父组件接收到的选中值:', item);
+
+    // 在这里处理选中的值，例如更新某个状态
+    this.selectedItem = item;
+
+    // 解析经纬度，确保 point 是 BMap.Point
+    const [lng, lat] = item.point.split(',').map(Number);
+    const point = new BMap.Point(lng, lat);
+
+    let iconSrc = ''; 
+    let level = ''; 
+
+    switch (item.yhdj_name) { 
+      case '轻微隐患': 
+        iconSrc = require('@/assets/minorpitfall.png'); 
+        level = '轻微隐患'; 
+        break; 
+      case '一般隐患': 
+        iconSrc = require('@/assets/generalpitfall.png'); 
+        level = '一般隐患'; 
+        break; 
+      case '重大隐患': 
+        iconSrc = require('@/assets/seriouspitfall.png'); 
+        level = '重大隐患'; 
+        break; 
+      case '特大隐患': 
+        iconSrc = require('@/assets/majorpitfall.png'); 
+        level = '特大隐患'; 
+        break; 
+      default: 
+        iconSrc = require('@/assets/pitfall.png'); 
+        level = '未知隐患'; 
+        break; 
+    }
+
+    // 创建百度地图图标
+    const myIcon = new BMap.Icon(iconSrc, new BMap.Size(30, 30)); 
+    const marker = new BMap.Marker(point, { icon: myIcon }); 
+     // 只移除标注，不影响道路划线
+    this.map.getOverlays().forEach(overlay => {
+      if (overlay instanceof BMap.Marker) {
+        this.map.removeOverlay(overlay);
+      }
+    });
+    // 先移除已有的标注（如果需要）
+    // this.map.clearOverlays();
+
+    // 添加新标注
+    this.map.addOverlay(marker); 
+    console.log("标注已添加:", marker);
+
+    // 调整地图视角
+    this.map.panTo(point); 
+    console.log("地图视角已调整:", point);
+
+
   },
   handleIntersectionSelection(intersection) {
     this.selectedType = "路口";
@@ -237,8 +310,13 @@ export default {
 },
   async handleRoadSelectionByRoad() {
   try {
+
+    const params = { 
+      id: this.selectedRoadId, 
+      yhdj: this.selectedSafetyLevel || undefined // 传入选中的安全等级，默认不传
+    };
     // 如果选中“全部”，不传递道路ID
-    const res = await safeRoadChild(this.selectedRoadId);
+    const res = await safeRoadChild(params);
     if(this.selectedRoadId === null){
       this.selectedType = 'all'
     }
@@ -246,9 +324,9 @@ export default {
     if (res.code === 0) {
       this.roadScores = res.data.section || []; // 更新路段数据
       this.intersectionScores = res.data.crossing || []; // 更新路口数据
-      console.log( 11111)
-      console.log( this.roadScores)
-      console.log( this.intersectionScores)
+      // console.log( 11111)
+      // console.log( this.roadScores)
+      // console.log( this.intersectionScores)
       // 绘制地图上的所有路段
       this.drawRoads(this.roadScores);
       //清空路口
@@ -294,13 +372,22 @@ export default {
     },
     
     async fetchRoadScores(roadId) {
-      const response = await safeRoadChild(roadId);
+      console.log('roadId'+roadId)
+
+      const params = { 
+        id: roadId, 
+      };
+      const response = await safeRoadChild(params);
       if (response.code === 0) {
         this.roadScores = response.data.section;
       }
     },
     async fetchIntersectionScores(roadId) {
-      const response = await safeRoadChild(roadId);
+      console.log('roadId2'+roadId)
+      const params = { 
+        id: roadId, 
+      };
+      const response = await safeRoadChild(params);
       if (response.code === 0) {
         this.intersectionScores = response.data.crossing;
       }
@@ -463,7 +550,7 @@ computed: {
   top: 120px;
   left: 10px;
   width: 446px;
-  height: 86px;
+  height: 136px;
   background: linear-gradient(135deg, #1f2a51, #0b1224);
   border-radius: 4px;
   border: 1px solid #3877F2;
@@ -755,4 +842,86 @@ computed: {
 }
 
 </style>
+<style>
+.hazard-info {
+  position: absolute;
+  top: 120px;
+  left: 480px;
+  background:linear-gradient(135deg, #1f2a51, #0b1224);
+  border: 1px solid #3877F2;
+  color: white;
+  padding: 15px;
+  border-radius: 5px;
+  width: 320px;
+  z-index: 1000;
+  font-size: 14px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  font-family: Arial, sans-serif;
+}
+.hazard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 18px;
+  font-weight: bold;
+  border-bottom: 2px solid #1E4E8C;
+  /* padding-bottom: 5px;
+  margin-bottom: 10px; */
+}
+.close-btn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+.hazard-desc {
+  color: #F7C948;
+}
+.hazard-image-container {
+  margin-top: 10px;
+  text-align: center;
+}
+.hazard-image-container img {
+  max-width: 100%;
+  border-radius: 5px;
+}
 
+
+.statistics-div {
+  max-height: 630px; /* 你可以根据需求调整高度 */
+  overflow-y: auto;  /* 允许垂直滚动 */
+}
+
+
+/* 滚动条整体区域 */
+.statistics-div::-webkit-scrollbar {
+  width: 10px; /* 滚动条宽度 */
+}
+
+/* 滚动条轨道 */
+.statistics-div::-webkit-scrollbar-track {
+  background: linear-gradient(135deg, #1f2a51, #0b1224); /* 轨道背景 */
+  border-radius: 5px;
+  border: 1px solid #3877F2; /* 轨道边框 */
+}
+
+/* 滚动条滑块 */
+.statistics-div::-webkit-scrollbar-thumb {
+  background: #3877F2; /* 滑块颜色 */
+  border-radius: 5px;
+  border: 2px solid #1f2a51; /* 滑块边框 */
+}
+
+/* 鼠标悬停时的滚动条滑块 */
+.statistics-div::-webkit-scrollbar-thumb:hover {
+  background: #5a8df8; /* 悬停时的颜色 */
+}
+
+/* Firefox 支持 */
+.statistics-div {
+  scrollbar-color: #3877F2 #1f2a51;
+  scrollbar-width: thin; /* 滚动条宽度变细 */
+}
+
+</style>

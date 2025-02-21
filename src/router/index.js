@@ -9,6 +9,7 @@ import BigScreen2 from '@/views/bigScreen/BigScreen2'
 import BigScreen3 from '@/views/bigScreen/BigScreen3'
 import BigScreen4 from '@/views/bigScreen/BigScreen4'
 import BigScreen5 from '@/views/bigScreen/BigScreen5'
+import CollectionTask from '@/views/app/CollectionTask'
 export const constantRoutes = [
   {
     path: '/big-screen',
@@ -34,6 +35,14 @@ export const constantRoutes = [
     path: '/big-screen5',
     component: BigScreen5,
     hidden: true
+  },
+  {
+    path: '/collectionTask',
+    component: () => import('@/views/app/CollectionTask.vue'),
+    hidden: true,
+    meta: {
+      requiresAuth: false, // 不需要登录
+    }
   },
   {
     path: '/public-page', 
@@ -200,15 +209,6 @@ export const asyncRoutes = [
         component: () => import('@/views/patrolManage/strategy'),
         name: 'strategy',
         meta: {
-          title: '巡查策略',
-          roles: ['admin']
-        }
-      },
-      {
-        path: 'planning',
-        component: () => import('@/views/patrolManage/planning'),
-        name: 'planning',
-        meta: {
           title: '巡查规划',
           roles: ['admin']
         }
@@ -311,7 +311,7 @@ export const asyncRoutes = [
       }
     ]
   },
-  // 占道施工
+  // 隐患修复
   {
     path: '/roadConstruction',
     component: Layout,
@@ -319,7 +319,7 @@ export const asyncRoutes = [
     alwaysShow: true, // will always show the root menu
     name: 'RoadConstruction',
     meta: {
-      title: '占道施工',
+      title: '隐患修复',
       icon: 'clipboard',
       roles: ['admin'] // you can set roles in root nav
     },
@@ -329,7 +329,7 @@ export const asyncRoutes = [
         component: () => import('@/views/roadConstruction/audit'),
         name: 'Audit',
         meta: {
-          title: '占道施工审核',
+          title: '隐患修复申请审核',
           roles: ['admin']
         }
       },
@@ -338,7 +338,7 @@ export const asyncRoutes = [
         component: () => import('@/views/roadConstruction/repair'),
         name: 'Repair',
         meta: {
-          title: '占道施工修复审核(交警)',
+          title: '隐患修复审核(交警)',
           roles: ['admin']
         }
       },
@@ -347,7 +347,7 @@ export const asyncRoutes = [
         component: () => import('@/views/roadConstruction/auditUnit'),
         name: 'AuditUnit',
         meta: {
-          title: '占道施工(施工单位)',
+          title: '隐患修复(施工单位)',
           roles: ['admin']
         }
       },
@@ -361,6 +361,89 @@ export const asyncRoutes = [
         },
         hidden: true
       },
+    ]
+  },
+  {
+    path: '/laneClosure',
+    component: Layout,
+    redirect: '/laneClosure/audit',
+    alwaysShow: true, // will always show the root menu
+    name: 'laneClosure',
+    meta: {
+      title: '占道施工',
+      icon: 'clipboard',
+      roles: ['admin'] // you can set roles in root nav
+    },
+    children: [
+      {
+        path: 'list',
+        component: () => import('@/views/laneClosure/list'),
+        name: 'list',
+        meta: {
+          title: '占道施工项目列表',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'companyList',
+        component: () => import('@/views/laneClosure/companyList'),
+        name: 'companyList',
+        meta: {
+          title: '施工企业列表',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'certification',
+        component: () => import('@/views/laneClosure/certification'),
+        name: 'certification',
+        meta: {
+          title: '施工企业材料上传',
+          roles: ['admin']
+        }
+      },
+      {
+        path: 'repairDetail',
+        component: () => import('@/views/laneClosure/repairDetail'),
+        name: 'repairDetail',
+        meta: {
+          title: '施工企业项目申请',
+          roles: ['admin']
+        },
+      },
+      {
+        path: 'divisionApproval',
+        component: () => import('@/views/laneClosure/divisionApproval'),
+        name: 'divisionApproval',
+        meta: {
+          title: '大队审批',
+          roles: ['admin']
+        },
+      },{
+        path: 'detachmentApproval',
+        component: () => import('@/views/laneClosure/detachmentApproval'),
+        name: 'detachmentApproval',
+        meta: {
+          title: '支队审批',
+          roles: ['admin']
+        },
+      },{
+        path: 'completionReview',
+        component: () => import('@/views/laneClosure/completionReview'),
+        name: 'completionReview',
+        meta: {
+          title: '竣工审核',
+          roles: ['admin']
+        },
+      },{
+        path: 'inspectionRecord',
+        component: () => import('@/views/laneClosure/inspectionRecord'),
+        name: 'inspectionRecord',
+        meta: {
+          title: '施工项目排查结果记录',
+          roles: ['admin']
+        },
+      }
     ]
   },
   // // 隐患修复

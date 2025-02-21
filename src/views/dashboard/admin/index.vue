@@ -4,323 +4,239 @@
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
         <div class="card-panel">
           <div class="card-panel-icon-wrapper icon-people">
-            <svg-icon icon-class="peoples" class-name="card-panel-icon" />
+            <svg-icon icon-class="drag" class-name="card-panel-icon" />
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">
-              总隐患数
-            </div>
-            <count-to
-              :start-val="0"
-              :end-val="133"
-              :duration="2600"
-              class="card-panel-num"
-            />
+            <div class="card-panel-text">总隐患数</div>
+            <count-to :start-val="0" :end-val="countData.totalHazards" :duration="2600" class="card-panel-num" />
           </div>
         </div>
       </el-col>
+
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
         <div class="card-panel">
           <div class="card-panel-icon-wrapper icon-message">
-            <svg-icon icon-class="message" class-name="card-panel-icon" />
+            <svg-icon icon-class="link" class-name="card-panel-icon" />
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">
-              已经修复的隐患数
-            </div>
-            <count-to
-              :start-val="0"
-              :end-val="113"
-              :duration="3000"
-              class="card-panel-num"
-            />
+            <div class="card-panel-text">规划查询里程数</div>
+            <count-to :start-val="0" :end-val="countData.plannedMileage" :duration="3000" class="card-panel-num" />
           </div>
         </div>
       </el-col>
+
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
         <div class="card-panel">
           <div class="card-panel-icon-wrapper icon-money">
-            <svg-icon icon-class="money" class-name="card-panel-icon" />
+            <svg-icon icon-class="guide" class-name="card-panel-icon" />
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">
-              待修复的隐患数
-            </div>
-            <count-to
-              :start-val="0"
-              :end-val="20"
-              :duration="3200"
-              class="card-panel-num"
-            />
+            <div class="card-panel-text">实际查询里程数</div>
+            <count-to :start-val="0" :end-val="countData.actualMileage" :duration="3200" class="card-panel-num" />
           </div>
         </div>
       </el-col>
+
       <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
         <div class="card-panel">
           <div class="card-panel-icon-wrapper icon-shopping">
-            <svg-icon icon-class="shopping" class-name="card-panel-icon" />
+            <svg-icon icon-class="user" class-name="card-panel-icon" />
           </div>
           <div class="card-panel-description">
-            <div class="card-panel-text">
-              累计修复的隐患数
-            </div>
-            <count-to
-              :start-val="0"
-              :end-val="500"
-              :duration="3600"
-              class="card-panel-num"
-            />
+            <div class="card-panel-text">巡查车数</div>
+            <count-to :start-val="0" :end-val="countData.inspectionCars" :duration="3600" class="card-panel-num" />
           </div>
         </div>
       </el-col>
     </el-row>
-    <el-row :gutter="40" class="panel-group">
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <router-link to="/hazardManage/pendingApproval">
-          <div class="pan-btn pink-btn">
-            待审批隐患
-            <span
-              class="num"
-            >(
-              <count-to
-                :start-val="0"
-                :end-val="10"
-                :duration="3200"
-                class="card-panel-num"
-              />)</span>
-          </div></router-link>
-      </el-col>
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <router-link to="/constructionManage/pendingApproval">
-          <div class="pan-btn green-btn">
-            待审批占道施工
-            <span
-              class="num"
-            >( {{ 5 }} )</span>
-          </div></router-link>
-      </el-col>
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <router-link to="/hazardManage/pendingFix">
-          <div class="pan-btn yellow-btn">
-            待修复隐患
-            <span
-              class="num"
-            >( {{ 20 }} )</span>
-          </div></router-link>
-      </el-col>
-      <el-col :xs="12" :sm="12" :lg="6" class="card-panel-col">
-        <router-link to="/safetyScore">
-          <div class="pan-btn tiffany-btn">
-            安全评分库
-            <span class="num">( {{ 90 }} )</span>
-          </div></router-link>
-      </el-col>
-    </el-row>
-    <el-row style="background:#fff;padding:16px 16px 0;margin-bottom:32px;">
-      <bar-chart :chart-data="chartData" />
-    </el-row>
-    <el-row :gutter="24">
-      <el-col
-        :xs="{ span: 24 }"
-        :sm="{ span: 24 }"
-        :md="{ span: 24 }"
-        :lg="{ span: 24 }"
-        :xl="{ span: 24 }"
-        style="margin-bottom:30px;"
-      >
-        <div style="padding-top:35px;" class="progress-item">
-          <span>季度隐患较上期增长</span>
-          <el-progress
-            :text-inside="true"
-            :stroke-width="20"
-            :percentage="70"
-            style="margin:10px 0;"
-          />
-        </div>
-        <div class="progress-item">
-          <span>季度评分较上期增长</span>
-          <el-progress
-            :text-inside="true"
-            :stroke-width="20"
-            :percentage="90"
-            status="success"
-            style="margin:10px 0;"
-          />
-        </div>
-      </el-col>
+
+    <!-- 新增：ECharts 柱状图 -->
+    <el-row style="background:#fff;padding:16px;margin-bottom:32px;margin-top: 30px;">
+      <!-- <h3 style="text-align: center;">隐患场景统计</h3> -->
+      <div id="hazardStatsChart" style="width: 100%; height: 400px;"></div>
     </el-row>
   </div>
 </template>
 
 <script>
-import BarChart from './components/BarChart'
+import * as echarts from 'echarts'
 import CountTo from 'vue-count-to'
+import { adminCount } from "@/api/road"
 
 export default {
   name: 'DashboardAdmin',
   components: {
-    BarChart,
     CountTo
   },
   data() {
     return {
-      chartData: {
-        totalHazards: [
-          133, 233, 123, 123, 234, 452, 543, 345, 632, 345, 435, 234
-        ],
-        fixedHazards: [
-          113, 213, 123, 124, 235, 456, 543, 345, 635, 344, 443, 213
-        ]
-      },
       countData: {
-        totalHazards: 133,
-        fixedHazards: 113,
-        pendingHazards: 20,
-        totalFixedHazards: 500,
-        pendingApprovalHazards: 10,
-        pendingApprovalConstruction: 5,
-        pendingFixHazards: 20,
-        safetyScore: 90
+        totalHazards: 0, // 隐患数（val1）
+        plannedMileage: 0, // 规划查询里程数（val2）
+        actualMileage: 0, // 实际查询里程数（val3）
+        inspectionCars: 0 // 巡查车数（val4）
+      },
+      hazardCategories: [], // 场景类别（X 轴）
+      hazardValues: [] // 隐患数量（Y 轴）
+    }
+  },
+  mounted() {
+    this.fetchAdminCount()
+  },
+  methods: {
+    async fetchAdminCount() {
+      try {
+        const response = await adminCount()
+        if (response.code === 0 && response.data) {
+          this.countData.totalHazards = response.data.val1 || 0
+          this.countData.plannedMileage = response.data.val2 || 0
+          this.countData.actualMileage = response.data.val3 || 0
+          this.countData.inspectionCars = response.data.val4 || 0
+
+          if (response.data.val5 && response.data.val5.length === 2) {
+            this.hazardCategories = response.data.val5[0] || []  // X 轴：场景类别
+            this.hazardValues = response.data.val5[1] || [] // Y 轴：对应数量
+          }
+
+          this.initHazardChart() // 初始化柱状图
+        } else {
+          console.error("获取 adminCount 失败:", response.msg)
+        }
+      } catch (error) {
+        console.error("adminCount 接口请求错误:", error)
       }
+    },
+
+    initHazardChart() {
+      const chartDom = document.getElementById('hazardStatsChart')
+      if (!chartDom) return
+
+      const myChart = echarts.init(chartDom)
+
+      const option = {
+        title: {
+          text: '不同场景的隐患数量统计',
+          left: 'center'
+        },
+        tooltip: {
+          trigger: 'axis'
+        },
+        xAxis: {
+          type: 'category',
+          data: this.hazardCategories, // 使用 val5[0] 作为 X 轴
+          axisLabel: {
+            rotate: 30,
+            interval: 0
+          }
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            name: '隐患数量',
+            type: 'bar',
+            data: this.hazardValues, // 使用 val5[1] 作为 Y 轴
+            barWidth: '50%',
+            itemStyle: {
+              color: '#409EFF'
+            }
+          }
+        ]
+      }
+
+      myChart.setOption(option)
+      window.addEventListener('resize', () => myChart.resize())
     }
   }
 }
 </script>
 
+
+
+
 <style lang="scss" scoped>
 .dashboard-editor-container {
   padding: 32px;
   height: 100%;
-  background-color: rgb(240, 242, 245);
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
   position: relative;
-
-  .github-corner {
-    position: absolute;
-    top: 0px;
-    border: 0;
-    right: 0;
-  }
-
-  .chart-wrapper {
-    background: #fff;
-    padding: 16px 16px 0;
-    margin-bottom: 32px;
-  }
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-@media (max-width: 1024px) {
-  .chart-wrapper {
-    padding: 8px;
-  }
+.panel-group {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
 }
+
 .card-panel {
-  height: 108px;
-  cursor: pointer;
-  font-size: 12px;
-  position: relative;
-  overflow: hidden;
-  color: #666;
-  background: #fff;
-  box-shadow: 4px 4px 40px rgba(0, 0, 0, 0.05);
-  border-color: rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    .card-panel-icon-wrapper {
-      color: #fff;
-    }
-
-    .icon-people {
-      background: #40c9c6;
-    }
-
-    .icon-message {
-      background: #36a3f7;
-    }
-
-    .icon-money {
-      background: #f4516c;
-    }
-
-    .icon-shopping {
-      background: #34bfa3;
-    }
-  }
-
-  .icon-people {
-    color: #40c9c6;
-  }
-
-  .icon-message {
-    color: #36a3f7;
-  }
-
-  .icon-money {
-    color: #f4516c;
-  }
-
-  .icon-shopping {
-    color: #34bfa3;
-  }
-
-  .card-panel-icon-wrapper {
-    float: left;
-    margin: 14px 0 0 14px;
-    padding: 16px;
-    transition: all 0.38s ease-out;
-    border-radius: 6px;
-  }
-
-  .card-panel-icon {
-    float: left;
-    font-size: 48px;
-  }
-
-  .card-panel-description {
-    float: right;
-    font-weight: bold;
-    margin: 26px;
-    margin-left: 0px;
-
-    .card-panel-text {
-      line-height: 18px;
-      color: rgba(0, 0, 0, 0.45);
-      font-size: 16px;
-      margin-bottom: 12px;
-    }
-
-    .card-panel-num {
-      font-size: 20px;
-    }
-  }
-}
-
-@media (max-width: 550px) {
-  .card-panel-description {
-    display: none;
-  }
-
-  .card-panel-icon-wrapper {
-    float: none !important;
-    width: 100%;
-    height: 100%;
-    margin: 0 !important;
-
-    .svg-icon {
-      display: block;
-      margin: 14px auto !important;
-      float: none !important;
-    }
-  }
-}
-.num {
-  font-size: 18px;
-}
-.pan-btn {
+  height: 130px;
   width: 100%;
-  font-size: 14px;
   cursor: pointer;
-  margin: 20px 0;
-  padding-top: 20px;
-  padding-bottom: 20px;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(135deg, #ffffff, #f3f6fb);
+  border-radius: 15px;
+  box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease-in-out;
+}
+
+.card-panel:hover {
+  transform: scale(1.08);
+  box-shadow: 6px 6px 25px rgba(0, 0, 0, 0.15);
+}
+
+.card-panel-icon-wrapper {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-left: 20px;
+  background: rgba(0, 162, 255, 0.1);
+}
+
+.card-panel-description {
+  flex-grow: 1;
+  text-align: center;
+  font-weight: bold;
+  color: #37474f;
+}
+
+.card-panel-text {
+  font-size: 18px;
+  color: #455a64;
+  margin-bottom: 10px;
+}
+
+.card-panel-num {
+  font-size: 22px;
+  color: #0277bd;
+}
+
+.chart-container {
+  background: #ffffff;
+  padding: 20px;
+  margin-top: 25px;
+  border-radius: 15px;
+  box-shadow: 3px 3px 15px rgba(0, 0, 0, 0.1);
+}
+
+.chart-title {
+  text-align: center;
+  font-size: 20px;
+  font-weight: bold;
+  color: #37474f;
+  margin-bottom: 15px;
+}
+
+.chart-box {
+  width: 100%;
+  height: 400px;
+  border-radius: 10px;
 }
 </style>

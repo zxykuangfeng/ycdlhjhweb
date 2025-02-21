@@ -449,7 +449,12 @@ export function deletePitfallLib(id) {
   });
 }
 
-
+export function deletePitfall(id) {
+  return request({
+    url: `/pitfall/delete/${id}`,
+    method: 'delete'
+  });
+}
 // 安全评分接口
 export function getSafetyRatingTypes() {
   return request({
@@ -839,7 +844,30 @@ export function downloadReport(id) {
     method: 'get',
   });
 }
+//报告下载
+export function reportShow(id) {
+  return request({
+    url: '/pitfall/report/'+id,
+    method: 'get',
+  });
+}
 
+
+export function updateReport(data) {
+  return request({
+    url: '/pitfall/report',
+    method: 'put',
+    data
+  });
+}
+
+
+export function seeReport(id) {
+  return request({
+    url: '/pitfall/report/see/'+id,
+    method: 'get'
+  });
+}
 export function safeRoadScore(params) {
   return request({
     url: '/screen/road/safeRoadScore',
@@ -865,19 +893,21 @@ export function pitfallDetail(id) {
 // }
 
 
-export function safeRoadChild(id) {
-  if(id){
-    return request({
-      url: `/screen/road/safeRoadChild?id=`+id,
-       method: 'get'
-   });
-  }else{
-    return request({
-      url: '/screen/road/safeRoadChild',
-      method: 'get'
-     });
-  }
+export function safeRoadChild(params = {}) {
+  // 过滤掉 `null`、`undefined` 和 `""` 的参数
+  const filteredParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v !== null && v !== undefined && v !== "")
+  );
+
+  // 生成查询字符串
+  const queryString = new URLSearchParams(filteredParams).toString();
+
+  return request({
+    url: `/screen/road/safeRoadChild${queryString ? '?' + queryString : ''}`,
+    method: 'get'
+  });
 }
+
 
 
 //施工单位列表
@@ -932,3 +962,324 @@ export function jcvOp(params) {
 }
 
 
+
+
+// addStrategy
+
+export function addInspectionPlan(data) {
+  return request({
+    url: '/inspectionPlan/add',
+    method: 'post',
+    data
+  });
+}
+
+
+export function inspectionPlanList() {
+  return request({
+    url: `/inspectionPlan/list`,
+     method: 'get'
+ });
+}
+
+
+
+export function inspectionPlanDetail(id) {
+  return request({
+    url: `/inspectionPlan/detail/${id}`,
+     method: 'get'
+ });
+}
+
+
+export function inspectionPlanChange(id) {
+  return request({
+    url: `/inspectionPlan/change/${id}`,
+     method: 'get'
+ });
+}
+ 
+export function adminCount(id) {
+  return request({
+    url: `/jb/tj`,
+     method: 'get'
+ });
+}
+ 
+export function sgqyList() {
+  return request({
+    url: `/sgqy/list`,
+     method: 'get'
+ });
+}
+
+export function sgqyAdd() {
+  return request({
+    url: `/sgqy/add`,
+     method: 'get'
+ });
+}
+
+export function sgqyCheck() {
+  return request({
+    url: `/sgqy/check`,
+     method: 'get'
+ });
+}
+
+export function sgqyDetail(id) {
+  return request({
+    url: `/sgqy/detail/${id}`,
+     method: 'get'
+ });
+}
+
+export function getCompanyInfo() {
+  return request({
+    url: `/sgqy/check`,
+     method: 'get'
+ });
+}
+
+export function addCompanyInfo(data) {
+  console.log('data11111')
+  console.log(data)
+  return request({
+    url: `/sgqy/add`,
+    method: 'post',
+    data
+ });
+}
+
+
+export function sgxmList() {
+  return request({
+    url: `/sgxm/list`,
+    method: 'get'
+  });
+}
+
+export function sgxmAdd(data) {
+  return request({
+    url: `/sgxm/add`,
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmEdit(data) {
+  return request({
+    url: `/sgxm/edit`,
+    method: 'put',
+    data
+  });
+}
+
+export function sgxmDetail(id) {
+  return request({
+    url: `/sgxm/detail/${id}`,
+    method: 'get'
+  });
+}
+
+export function sgxmDelete(id) {
+  return request({
+    url: `/sgxm/delete/${id}`,
+    method: 'delete'
+  });
+}
+
+export function sgxmApply(id) {
+  return request({
+    url: `/sgxm/apply/${id}`,
+    method: 'get'
+  });
+}
+
+export function sgxmApplyAdd(data) {
+  return request({
+    url: `/sgxm/apply/add`,
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmApplyEdit(data) {
+  return request({
+    url: `/sgxm/apply/edit`,
+    method: 'put',
+    data
+  });
+}
+
+export function sgxmApplyDelete(id) {
+  return request({
+    url: `/sgxm/apply/delete/${id}`,
+    method: 'delete'
+  });
+}
+
+export function sgxmApplyList() {
+  return request({
+    url: `/sgxm/apply`,
+    method: 'get'
+  });
+}
+
+export function sgxmAudit(data) {
+  return request({
+    url: `/sgxm/audit`,
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmYs(data) {
+  return request({
+    url: `/sgxm/ys`,
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmRepair(data) {
+  return request({
+    url: `/sgxm/repair`,
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmApplyFor(id, data) {
+  return request({
+    url: `/sgxm/applyFor/${id}`,
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmApplyComplete(id, data) {
+  return request({
+    url: `/sgxm/applyComplete/${id}`,
+    method: 'post',
+    data
+  });
+}
+
+
+export function facilityType(data) {
+  return request({
+    url: `/facilityType/list`,
+    method: 'get',
+    data
+  });
+}
+
+export function applyAdd(data) {
+  return request({
+    url: `/sgxm/apply/add2`,
+    method: 'post',
+    data
+  });
+}
+
+
+export function sgxmsAdd(data) {
+  return request({
+    url: '/sgxms/add',
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmsList(params) {
+  return request({
+    url: '/sgxms/list',
+    method: 'get',
+    params
+  });
+}
+
+export function sgxmsDelete(id) {
+  return request({
+    url: `/sgxms/delete/${id}`,
+    method: 'delete'
+  });
+}
+
+export function sgxmsDetail(id) {
+  return request({
+    url: `/sgxms/detail/${id}`,
+    method: 'get'
+  });
+}
+
+export function sgxmsAudit(data) {
+  return request({
+    url: '/sgxms/audit',
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmsSg(data) {
+  return request({
+    url: '/sgxms/sg',
+    method: 'post',
+    data
+  });
+}
+
+export function sgxmsYs(data) {
+  return request({
+    url: '/sgxms/ys',
+    method: 'post',
+    data
+  });
+}
+
+// 排查结果记录接口
+export function addResult(data) {
+  return request({
+    url: '/sgxms/result/add',
+    method: 'post',
+    data
+  });
+}
+
+export function editResult(data) {
+  return request({
+    url: '/sgxms/result/edit',
+    method: 'put',
+    data
+  });
+}
+
+export function getResultDetail(id) {
+  return request({
+    url: `/sgxms/result/detail/${id}`,
+    method: 'get'
+  });
+}
+
+export function getResultList(params) {
+  return request({
+    url: '/sgxms/result/list',
+    method: 'get',
+    params
+  });
+}
+
+export function deleteResult(id) {
+  return request({
+    url: `/sgxms/result/delete/${id}`,
+    method: 'delete'
+  });
+}
+
+export function sgxmsAllList(id) {
+  return request({
+    url: `sgxms/allList`,
+    method: 'get'
+  });
+}

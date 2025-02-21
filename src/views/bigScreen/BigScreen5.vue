@@ -29,7 +29,7 @@ export default {
       buttonImage: require('@/assets/button.png'),
       selectedButtonImage: require('@/assets/button-selected.png'),
       buttonCount: 4, // Number of buttons
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '系统管理'], // Button labels
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'], // Button labels
       map: null // 地图实例
     }
   },

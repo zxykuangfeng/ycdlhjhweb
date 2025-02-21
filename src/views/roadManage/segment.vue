@@ -162,7 +162,7 @@
               <el-option label="普通路段" :value="1" />
               <el-option label="临水路段" :value="2" />
               <el-option label="学校路段" :value="3" />
-              <el-option label="急弯路段" :value="4" />
+              <el-option label="急弯路段" :value="30" />
             </el-select>
           </el-form-item>
           </el-col>

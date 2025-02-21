@@ -169,12 +169,18 @@ export default {
           this.loading = true;
           this.$store
             .dispatch('user/login',{ userInfo: this.loginForm, message: this.$message})
-            .then(() => {
+            .then(show_screen => { // 👈 这里接收 isadmin
               this.$message.success('登录成功');
-              this.$router.push({
-                path: this.redirect || '/',
-                query: this.otherQuery
-              });
+              // this.$router.push({
+              //   path: '/big-screen3', // 修改跳转路径
+              //   query: this.otherQuery
+              // });
+
+              if (show_screen === 1) {
+                this.$router.push({ path: '/big-screen3', query: this.otherQuery });
+              } else {
+                this.$router.push({ path: '/laneClosure/list', query: this.otherQuery });
+              }
               this.loading = false;
             })
             .catch(error => { // 在这里捕获错误并传入 error 参数

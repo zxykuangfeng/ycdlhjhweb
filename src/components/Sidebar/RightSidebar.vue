@@ -20,7 +20,7 @@
 
       <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 10px;">
     <div>
-      <label style="color: #E5EAF3; font-size: 14px;">场景:</label>
+      <label style="color: #E5EAF3; font-size: 14px;">检查项:</label>
       <select v-model="selectedScenario" @change="onScenarioChange" class="styled-select" style="width: 110px;font-size: 14px;">
         <option v-for="scenario in scenarioList" :key="scenario" :value="scenario">
           {{ scenario }}
@@ -37,7 +37,7 @@
     </div>
   </div>
       <ul class="top-list">
-        <li v-for="(item, index) in top5Hazards" :key="index" class="list-item" style="display: flex;">
+        <li v-for="(item, index) in top5Hazards" :key="index" @click="handleClick(item)" class="list-item"   :class="{ selected: selectedHazard === item }" style="display: flex;">
           
           <div
               class="bg"
@@ -138,14 +138,15 @@ export default {
         'linear-gradient(270deg, rgba(57,115,250,0.2) 0%, rgba(56,119,242,0.3) 100%)',
         'linear-gradient(270deg, rgba(57,115,250,0.2) 0%, rgba(56,119,242,0.3) 100%)'
       ],
-      scenarioList: ['全场景', '轻微隐患', '一般隐患', '重大隐患', '特大隐患'],
-    selectedScenario: '全场景',
+      scenarioList: ['全检查项', '平面线型', '曲面半径', '道路标牌', '路面标线','路口视距'],
+    selectedScenario: '全检查项',
     scenarioMap: {
       全场景: null, // 全场景传 null 或不传
-      轻微隐患: 10,
-      一般隐患: 11,
-      重大隐患: 12,
-      特大隐患: 13
+      平面线型: 5,
+      曲面半径: 6,
+      道路标牌: 7,
+      路面标线: 8,
+      路口视距: 9
     },
     // 道路等级下拉列表
     roadLevelList: [
@@ -161,9 +162,15 @@ export default {
       城市主干道: 22
     },
     selectedRoadLevel: '全道路等级',
+    selectedHazard: null
     };
   },
   methods: {
+
+    handleClick(item) {
+      this.$emit('hazard-clicked', item);
+      this.selectedHazard = item;
+    },
     // 初始化隐患空间分布图表
     initSpaceChart(spaceData = []) {
       if (!this.spaceChart) {
@@ -270,6 +277,7 @@ export default {
           this.top5Hazards = data.number.map((item) => ({
             description: item.name,
             count: item.count,
+            yhlb: item.yhlb,
           }));
           console.log(1111111111111)
           console.log(this.top5Hazards)
@@ -476,4 +484,13 @@ export default {
   font-weight: 700;
 }
 
+</style>
+<style>
+.list-item.selected {
+  background-color: rgba(56, 119, 242, 0.3);
+  color: #ffffff;
+  border: 2px solid #3877F2;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+}
 </style>

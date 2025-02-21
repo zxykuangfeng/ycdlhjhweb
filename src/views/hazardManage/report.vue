@@ -23,6 +23,8 @@
         icon="el-icon-edit"
         @click="handleCreate"
       >新增报告</el-button>
+      <!-- <el-button class="filter-item" style="margin-left: auto;" type="success" icon="el-icon-download" @click="exportSelected">导出</el-button> -->
+
     </div>
 
     <el-table
@@ -34,13 +36,17 @@
       fit
       highlight-current-row
       style="width: 100%;"
-    >
+    > <el-table-column type="selection" width="55" />
       <el-table-column label="报告编号" prop="code" align="center" min-width="150px" />
       <el-table-column label="报告名称" prop="name" align="center" min-width="200px" />
       <el-table-column label="创建时间" prop="create_time" align="center" min-width="150px" />
-      <el-table-column label="操作" align="center" width="200">
+      <el-table-column label="操作" align="center" width="400">
         <template #default="{ row }">
-          <el-button size="mini" type="primary" @click="downloadReport(row.id)">下载</el-button>
+          <el-button size="mini" type="primary" @click="downloadReport(row.id)">导出</el-button>
+          <el-button size="mini" type="primary" @click="viewReport(row)">查看详情</el-button>
+          <el-button size="mini" type="info" @click="previewReport(row)">预览</el-button>
+          <el-button size="mini" type="warning" @click="openEditDialog(row)">编辑</el-button>
+          <!-- <el-button size="mini" type="success" @click="exportReport(row.id)">导出</el-button> -->
         </template>
       </el-table-column>
     </el-table>
@@ -91,11 +97,43 @@
         <el-button type="primary" @click="createReport">确认</el-button>
       </div>
     </el-dialog>
+
+    <el-dialog title="报告详情" :visible.sync="dialogVisible" width="50%">
+      <el-form :model="selectedReport" label-width="100px" disabled>
+        <el-form-item label="报告编号"><el-input v-model="selectedReport.code" /></el-form-item>
+        <el-form-item label="报告名称"><el-input v-model="selectedReport.name" /></el-form-item>
+        <el-form-item label="创建时间"><el-input v-model="selectedReport.create_time" /></el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">关闭</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog title="编辑报告" :visible.sync="editDialogVisible" width="50%">
+      <el-form :model="selectedReport" label-width="100px">
+        <el-form-item label="报告名称"><el-input v-model="selectedReport.name" /></el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="editDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="updateReportData">确认</el-button>
+      </span>
+    </el-dialog>
+
+    <el-dialog title="报告预览" :visible.sync="previewDialogVisible" width="50%">
+      <h3>{{ previewData.name }}</h3>
+      <div v-for="(item, index) in previewData.content" :key="index">
+        <h4>{{ item[0] }}</h4>
+        <p v-for="(detail, subIndex) in item.slice(1)" :key="subIndex">{{ detail }}</p>
+      </div>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="previewDialogVisible = false">关闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-import { getReportList, addReport, downloadReport, getRoadList } from '@/api/road';
+import { getReportList, addReport, downloadReport, getRoadList,updateReport,seeReport} from '@/api/road';
 import Pagination from '@/components/Pagination';
 
 export default {
@@ -104,6 +142,12 @@ export default {
   data() {
     return {
       list: [],
+      selectedReports: [],
+      selectedReport: {},
+      dialogVisible: false,
+      editDialogVisible: false,
+      previewDialogVisible: false,
+      previewData: { name: '', content: '' },
       loading: false,
       tableKey: 0,
       total: 0,
@@ -155,8 +199,7 @@ export default {
       getRoadList().then(res => {
         if (res.code === 0) {
           this.roadList = res.data.data;
-          // console.log(222222222222222)
-          // console.log(res.data)
+     
         }
       });
     },
@@ -181,8 +224,47 @@ export default {
     downloadReport(id) {
       console.log(id)
       window.location.href = "admin/pitfall/report/"+id
-    }
+    },
+    viewReport(row) {
+      this.selectedReport = { ...row };
 
+      console.log('selectedReport'+this.selectedReport)
+      this.dialogVisible = true;
+    },
+    openEditDialog(row) {
+
+      
+      this.selectedReport = { ...row };
+      this.editDialogVisible = true;
+    },
+    updateReportData() {
+      updateReport(this.selectedReport).then(() => {
+        this.$notify({ title: '成功', message: '报告已更新', type: 'success' });
+        this.editDialogVisible = false;
+        this.getList();
+      });
+    },
+    exportReport(id) {
+      exportReport(id).then(() => {
+        this.$notify({ title: '成功', message: '报告导出成功', type: 'success' });
+      });
+    },
+    exportSelected() {
+      const ids = this.selectedReports.map(item => item.id);
+      exportReport(ids).then(() => {
+        this.$notify({ title: '成功', message: '选中报告导出成功', type: 'success' });
+      });
+    },
+    previewReport(row) {
+      seeReport(row.id).then(res => {
+        if (res.code === 0) {
+          this.previewData = { name: res.data[0].name, content: res.data[1].content };
+          this.previewDialogVisible = true;
+        } else {
+          this.$notify({ title: '失败', message: res.msg, type: 'error' });
+        }
+      });
+    }
   } 
 };
 </script>

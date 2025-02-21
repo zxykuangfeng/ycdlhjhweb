@@ -106,10 +106,10 @@
               <el-input v-model="temp.code" />
             </el-form-item>
             <el-form-item label="检测标准:" prop="jcbz">
-              <el-input v-model="temp.testing_standards" type="textarea" />
+              <el-input v-model="temp.jcbz" type="textarea" />
           </el-form-item>
           <el-form-item label="治理对策:" prop="zldc">
-              <el-input v-model="temp.countermeasures" type="textarea" />
+              <el-input v-model="temp.zldc" type="textarea" />
           </el-form-item>
             <el-form-item label="场景:" prop="scene">
               <el-select v-model="temp.scene" placeholder="请选择场景">

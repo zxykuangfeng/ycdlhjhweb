@@ -46,7 +46,8 @@ const actions = {
           } else if (response.status === 'S') {
             commit('SET_TOKEN', response.api_token);
             setToken(response.api_token);
-            resolve();
+            resolve(response.show_screen); // 👈 这里返回 isadmin
+            // resolve();
           } else {
             message.warning('未知登录状态');
             reject(new Error('未知登录状态'));

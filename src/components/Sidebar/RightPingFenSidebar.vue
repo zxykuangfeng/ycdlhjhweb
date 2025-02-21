@@ -71,6 +71,7 @@
                 :key="i"
                 class="section-table-list"
                 :class="{ 'row-alternate': i % 2 === 1 }"
+                @click="handleItemClick(item)"
               >
                 <div>{{ item.yhlb_name }}</div>
                 <div>{{ item.yhdj_name }}</div>
@@ -174,6 +175,9 @@ export default {
     },
     toggleSection(index) {
       this.$set(this.expandedSections, index, !this.expandedSections[index]);
+    },
+    handleItemClick(item) {
+      this.$emit('item-selected', item); // 触发父组件事件并传递选中的值
     },
     getHazardCardClass(id) {
       switch (id) {
@@ -560,5 +564,26 @@ export default {
 .score-tag.poor {
   background: #D30C0F; /* 红色 */
   color: white;
+}
+
+.section-content {
+  max-height: 300px; /* 限制高度，超出部分滚动 */
+  overflow-y: auto;  /* 启用滚动条 */
+  /* border: 1px solid #ddd; */
+  padding: 8px;
+}
+
+/* 自定义滚动条样式 */
+.section-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.section-content::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.section-content::-webkit-scrollbar-track {
+  background-color: #f1f1f1;
 }
 </style>

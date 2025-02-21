@@ -133,34 +133,18 @@
     <div class="custom-hazard-box">
       <h3 class="custom-box-title">道路资产</h3>
       <div class="custom-hazard-indicators">
-        <div class="custom-hazard-item">
-          <img :src="minorpitfallImage" alt="警告标志" />
-          <span>警告标志</span>
-        </div>
-        <div class="custom-hazard-item">
-          <img :src="stopImage" alt="禁令标志" />
-          <span>禁令标志</span>
-        </div>
-        <div class="custom-hazard-item">
-          <img :src="tipsImage" alt="指示标志" />
-          <span>指示标志</span>
-        </div>
-        <div class="custom-hazard-item">
-          <img :src="luzhifallImage" alt="指路标志" />
-          <span>指路标志</span>
-        </div>
-        <div class="custom-hazard-item">
-          <img :src="sgaqImage" alt="施工安全标志" />
-          <span>施工安全标志</span>
-        </div>
-        <div class="custom-hazard-item">
-          <img :src="dengImage" alt="交通信号灯" />
-          <span>交通信号灯</span>
+        <div class="custom-hazard-item" 
+            v-for="item in assetList" 
+            :key="item.fid" 
+            @click="handleAssetClick(item.fid)"
+            :class="{ 'selected-asset': selectedAssetType === item.fid }">
+          <img :src="item.image" :alt="item.label" />
+          <span>{{ item.label }}</span>
         </div>
       </div>
     </div>
     <!-- <transition name="scale-popup"> -->
-      <div v-if="popupVisible" class="popup">
+      <div v-if="popupVisible && !panoramaMode" class="popup">
       <div class="popup-background"></div>
       <h3 class="popup-title">
         <img :src="right" alt="右侧图片" />
@@ -269,9 +253,10 @@
       :src="currentImage" 
       alt="实景图" 
       class="panorama-image"
-      @click="openLargeImage(currentImage)"
+      @click="openLargeImage(currentImage,true)"
     /> 
-    <div>    <button 
+    <div>    
+      <button 
       @click="prevImage" 
       class="image-nav-button" 
       > <img :src="leftImage" alt="" /></button>
@@ -287,6 +272,14 @@
  <div v-if="showLargeImagePopup" class="large-image-popup">
   <div class="popupbig-background"></div>
   <div class="popupbig-content">
+     <div style="display: flex;align-items: center;">    
+      <button 
+        v-if="isPanoramaImg"
+        @click="prevImage" 
+        class="image-nav-button" 
+        style="margin-right: 20px;background: transparent"
+      >{{isPanoramaImg}} <img :src="leftImage" alt="" /></button>
+
     <img :src="largeImageSrc" alt="大图" class="large-image" />
     <!-- <img 
       :src="cha2Image" 
@@ -294,6 +287,14 @@
       class="close-icon" 
       @click="closeLargeImage"
     /> -->
+   
+
+    <button
+        v-if="isPanoramaImg"
+        @click="nextImage" 
+        class="image-nav-button" 
+        style="margin-left: 20px;background: transparent"
+      ><img :src="rightImage" alt="" /></button></div>
 
     <div class="close-button" @click="closeLargeImage">×</div>
 
@@ -336,7 +337,7 @@ export default {
       panoramaImage: '', // 模拟的实景图地址
       panoramaVisible: false, // 是否显示全景图片弹窗
       buttonCount: 4,
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '系统管理'],
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'],
       zoomLevel: 12, // 初始缩放等级
       map: null, // 保存地图实例
       roadRectionList: [], // 保存所有道路数据
@@ -356,6 +357,7 @@ export default {
       town_name:null,
       road_length:null,
       road_name:null,
+      selectedAssetType: null, // 选中的资产类型
       points: [
   // {"lng": 120.15173, "lat": 33.38557, "type": 4},
   // {"lng": 120.1516, "lat": 33.38636, "type": 1},
@@ -413,6 +415,15 @@ export default {
     currentImage:"",
 
     currentImageId:"",
+    isPanoramaImg:false,
+    assetList: [
+      { fid: 7, image: require('@/assets/minorpitfall.png'), label: '警告标志' },
+      { fid: 8, image: require('@/assets/stop.png'), label: '禁令标志' },
+      { fid: 9, image: require('@/assets/tips.png'), label: '指示标志' },
+      { fid: 10, image: require('@/assets/luzhi.png'), label: '指路标志' },
+      { fid: 11, image: require('@/assets/deng.png'), label: '施工安全标志' },
+      { fid: 12, image: require('@/assets/sgaq.png'), label: '交通信号灯' }
+    ]
     };
 
     
@@ -465,9 +476,9 @@ export default {
     }
   },
 
-  async fetchProperty({ type, id } = {}) {
+  async fetchProperty({ type, id,fid} = {}) {
     try {
-      const res = await property({ type, id });
+      const res = await property({ type, id ,fid});
       console.log('Property List API Response:', res);
       if (res.code === 0 && res.data) {
           const points = res.data.map((item) => {
@@ -573,27 +584,55 @@ export default {
    
     },
 
-  addMarkers() {
-    const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯']; // 类型标签数组
+    addMarkers() {
+  if (!this.map) {
+    console.error("地图对象未初始化");
+    return;
+  }
+  if (!Array.isArray(this.points) || this.points.length === 0) {
+    console.error("this.points 为空或不是数组");
+    return;
+  }
 
-  this.points.forEach(({ lng, lat, type,imgs,road_name,create_time,address  }) => {
-    console.log(1111111111111)
-    console.log(imgs)
+  const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯']; // 类型标签数组
+  console.log('points:', this.points);
+
+  this.points.forEach(({ lng, lat, type, imgs, road_name, create_time, address }) => {
+    console.log('lng:', lng, 'lat:', lat);
+
+    if (typeof lng !== 'number' || typeof lat !== 'number') {
+      console.error("lng 或 lat 不是有效的数字", { lng, lat });
+      return;
+    }
 
     const point = new BMap.Point(lng, lat);
+    console.log('point:', point);
+
+    if (!this.markerImages || !this.markerImages[type - 1]) {
+      console.error("markerImages 未定义或索引越界", { type, markerImages: this.markerImages });
+      return;
+    }
+
     const markerIcon = new BMap.Icon(this.markerImages[type - 1], new BMap.Size(30, 30));
     const marker = new BMap.Marker(point, { icon: markerIcon });
-    // 动态内容示例
+
+    if (!marker) {
+      console.error("marker 创建失败", { point, markerIcon });
+      return;
+    }
+
+    console.log('marker:', marker);
 
     const levelText = "一级"; // 示例等级文字
     const backgroundColor = "#FF3333"; // 示例背景颜色
     const fullImageUrl = `http://roadserver.lysoo.com:8081/${imgs}`;
+
     const infoWindowContent = `
       <div style="
         position: relative;
         width: 530px;
         height: 550px;
-        background: url(${this.popbgImage});
+        background: url(${this.popbgImage || ''});
         background-repeat: no-repeat; 
         background-size: 100% 100%;
         color: white;
@@ -612,7 +651,6 @@ export default {
           padding: 20px;
           box-sizing: border-box;
         ">
-          <!-- 标题部分 -->
           <h3 class="title" style="
             font-size: 16px;
             height: 40px;
@@ -625,69 +663,33 @@ export default {
             background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
             border-radius: 5px;
           ">
-            <img src="${this.right}" alt="右侧图片" style="width: 20px; height: 20px;">
-            <div style="flex: 1; text-align: center; color: #FFFFFF;">${road_name} ${typeLabels[type - 7]}</div>
-            <img src="${this.left}" alt="左侧图片" style="width: 20px; height: 20px;">
+            <img src="${this.right || ''}" alt="右侧图片" style="width: 20px; height: 20px;">
+            <div style="flex: 1; text-align: center; color: #FFFFFF;">${road_name} ${typeLabels[type - 7] || '未知类型'}</div>
+            <img src="${this.left || ''}" alt="左侧图片" style="width: 20px; height: 20px;">
           </h3>
 
-          <!-- 信息行 -->
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
-            <div style="font-size: 14px; color: #89C0FF;">${typeLabels[type - 7]}</div>
-            <div style="
-              width: 80px;
-              height: 25px;
-              background: ${backgroundColor};
-              color: #FFFFFF;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              border-radius: 4px;
-              font-size: 12px;
-            ">${levelText}</div>
+            <div style="font-size: 14px; color: #89C0FF;">${typeLabels[type - 7] || '未知类型'}</div>
+            
           </div>
 
-   
-
-          <!-- 分割线 -->
           <div style="width: 100%; height: 1px; background: #3877F2; margin-bottom: 15px;"></div>
 
-          <!-- 地址 -->
-          <div style="
-            font-size: 14px; 
-            color: #89C0FF; 
-            margin-bottom: 10px;
-            display:flex;
-            align-items: center;
-          ">
-          <span style="margin-left:10px;">${address ? address : ''}</span>
-
+          <div style="font-size: 14px; color: #89C0FF; margin-bottom: 10px; display:flex; align-items: center;">
+            <span style="margin-left:10px;">${address || ''}</span>
           </div>
 
-          <!-- 排查时间 -->
-          <div style="
-            font-size: 14px; 
-            color: #617199; 
-            margin-bottom: 20px;
-            display:flex;
-            align-items: center;
-          ">
-            <span style="margin-left:10px;">排查时间：${create_time}</span>
+          <div style="font-size: 14px; color: #617199; margin-bottom: 20px; display:flex; align-items: center;">
+            <span style="margin-left:10px;">排查时间：${create_time || ''}</span>
           </div>
 
-          <!-- 图片展示 -->
           <div id="popupImageContainer" style="width: 100%; height: 350px; border-radius: 5px; overflow: hidden;">
             <img id="popupImage" src="${fullImageUrl}" alt="" style="width: 100%; height: auto; object-fit: cover;" />
           </div>
         </div>
       </div>
     `;
-    console.log('point111',point)
-    // 创建弹窗
-      
-    // var pmpont =  {lng: 120.15173, lat: 31.38557};
 
-    const pmpont = new BMap.Point(120.15173, 33.38557);
-    console.log('pmpont',pmpont)
     const infoWindow = new BMap.InfoWindow(infoWindowContent, {
       width: 530,
       height: 550,
@@ -695,56 +697,39 @@ export default {
       enableMessage: false,
     });
 
-  //   // 添加点击事件显示弹窗
-  //   marker.addEventListener('click', () => {
-  //   const pmpont = new BMap.Point(120.15173, 33.38557);
+    marker.addEventListener('click', () => {
+      console.log('Marker clicked:', marker);
+      const zoomLevel = this.map.getZoom();
+      console.log('zoomLevel:', zoomLevel);
 
-  //   // 首先移动地图
-  //   this.map.panTo(pmpont);
+      const baseOffset = 0.002;
+      const offsetFactor = Math.pow(2, 18 - zoomLevel);
+      const adjustedOffset = baseOffset * offsetFactor;
 
-  //   // 延迟显示弹窗，等待地图移动完成
-  //   setTimeout(() => {
-  //     this.map.openInfoWindow(infoWindow, point);
-  //   }, 300); // 延迟 300ms（可以调整这个值）
-  // });
-    
-  marker.addEventListener('click', () => {
-  const zoomLevel = this.map.getZoom(); // 获取当前地图缩放等级
-  console.log('zoomLevel:', zoomLevel);
+      const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
+      this.map.openInfoWindow(infoWindow, point);
 
-  // 根据缩放等级计算动态偏移量
-  const baseOffset = 0.002; // 基础偏移量（适用于 zoomLevel = 18）
-  const offsetFactor = Math.pow(2, 18 - zoomLevel); // 动态调整偏移比例
-  const adjustedOffset = baseOffset * offsetFactor;
-
-  // 计算偏移点
-  const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
-
-  // 打开弹窗
-  this.map.openInfoWindow(infoWindow, point);
-  setTimeout(() => {
+      setTimeout(() => {
         const imageContainer = document.getElementById('popupImageContainer');
         if (imageContainer) {
           imageContainer.addEventListener('click', () => {
-          console.log('点击了图片容器！');
-          console.log(fullImageUrl);
-            this.openLargeImage(fullImageUrl)
-            
-            // // 在这里处理点击事件，例如打开大图或其他操作
-            // alert('你点击了图片！');
+            console.log('点击了图片容器！');
+            console.log(fullImageUrl);
+            this.openLargeImage(fullImageUrl);
           });
         }
-      }, 400); 
-  // 延迟平移视图到偏移点，使弹窗居中
-    setTimeout(() => {
-      this.map.panTo(offsetPoint);
-    }, 300); // 延迟 300ms
-  });
+      }, 400);
 
-  // 将标记添加到地图
-  this.map.addOverlay(marker);
+      setTimeout(() => {
+        this.map.panTo(offsetPoint);
+      }, 300);
     });
-  },
+
+    console.log('添加 marker:', marker);
+    this.map.addOverlay(marker);
+  });
+},
+
 
   showMarkerPopup(type) {
   const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯'];
@@ -894,6 +879,41 @@ async fetchAllFacilities() {
       console.error("Error fetching road facility data:", error);
     }
   },
+
+  async handleAssetClick(fid) {
+      console.log(`选中资产类型: ${fid}`);
+
+      try {
+        // **只清空标注，不清空道路划线**
+        this.selectedAssetType = fid; // 更新当前选中的类型
+
+        this.clearMarkers();
+
+        // 请求数据，只获取当前类型的标注
+        await this.fetchProperty({ fid });
+
+        // 重新在地图上添加新的标注
+        this.addMarkers();
+      } catch (error) {
+        console.error('加载资产标注失败:', error);
+      }
+    },
+    clearMarkers() {
+      if (!this.map) {
+        console.error("地图对象未初始化");
+        return;
+      }
+
+      // 遍历所有覆盖物，只移除 `Marker`，不影响 `Polyline`
+      const allOverlays = this.map.getOverlays();
+      allOverlays.forEach(overlay => {
+        if (overlay instanceof BMap.Marker) {
+          this.map.removeOverlay(overlay);
+        }
+      });
+
+      console.log("已清空标注，保留道路划线");
+    },
 async updateStatistics(road) {
   if (!road || !road.id) {
     console.error("Road ID is missing.");
@@ -1028,7 +1048,7 @@ async updateStatistics(road) {
         if (response.code === 0) {
           const fullImageUrl = `http://roadserver.lysoo.com:8081/${response.data.path}`;
             this.currentImage = fullImageUrl; // 获取单张图片
-
+            this.largeImageSrc = fullImageUrl;
             this.currentImageId = response.data.id;
         } else {
           console.error('获取下一张图片失败:', response.msg);
@@ -1046,7 +1066,7 @@ async updateStatistics(road) {
         if (response.code === 0) {
           const fullImageUrl = `http://roadserver.lysoo.com:8081/${response.data.path}`;
             this.currentImage = fullImageUrl; // 获取单张图片
-
+            this.largeImageSrc = fullImageUrl;
             this.currentImageId = response.data.id;
         } else {
           console.error('获取上一张图片失败:', response.msg);
@@ -1083,15 +1103,22 @@ async updateStatistics(road) {
     //   }
     // });
   },
-  openLargeImage(imageSrc) {
-    console.log(222222222)
+  openLargeImage(imageSrc,isPanoramaImg) {
+    // console.log(222222222)
+
+    if(isPanoramaImg){
+      this.isPanoramaImg = true;
+    }else{
+      this.isPanoramaImg = false;
+    }
     this.largeImageSrc = imageSrc; // 设置大图地址
     this.showLargeImagePopup = true; // 显示弹窗
-
+    
     console.log(this.showLargeImagePopup)
   },
   closeLargeImage() {
     this.showLargeImagePopup = false; // 隐藏弹窗
+    this.isPanoramaImg = false;
   },
   },
   mounted() {
@@ -1643,6 +1670,22 @@ async updateStatistics(road) {
 ::v-deep .el-select-dropdown__item.is-selected {
   background-color: #3877f2 !important;
   color: #fff !important;
+}
+
+.custom-hazard-item {
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.custom-hazard-item:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.selected-asset {
+  border: 1px solid #3877F2;  /* 选中的高亮边框 */
+  background-color: rgba(255, 255, 255, 0.3); /* 选中时的背景色 */
 }
 </style>
 <!-- <style>
