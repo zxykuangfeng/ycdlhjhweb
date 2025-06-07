@@ -25,10 +25,33 @@
           <strong>隐患描述：</strong> {{ detailData.description }}
         </div>
         <div class="strategy-section">
-          <h4>规范和治理对策</h4>
-          <p><strong>检测标准：</strong> {{ detailData.standard }}</p>
-          <p><strong>治理对策：</strong> {{ detailData.strategy }}</p>
-        </div>
+  <h4 class="section-title">规范和治理对策</h4>
+
+  <div class="strategy-item">
+    <span class="strategy-label">检测标准：</span>
+    <span class="strategy-text">{{ detailData.standard }}</span>
+    <img
+      v-if="detailData.testing_image"
+      :src="detailData.testing_image"
+      alt="检测标准图"
+      class="strategy-image"
+      @click="handlePreview(detailData.testing_image)"
+    />
+  </div>
+
+  <div class="strategy-item">
+    <span class="strategy-label">治理对策：</span>
+    <span class="strategy-text">{{ detailData.strategy }}</span>
+    <img
+      v-if="detailData.counter_image"
+      :src="detailData.counter_image"
+      alt="治理对策图"
+      class="strategy-image"
+      @click="handlePreview(detailData.counter_image)"
+    />
+  </div>
+</div>
+
       </el-card>
       
       <!-- 地图展示 -->
@@ -63,14 +86,30 @@
       <el-card class="approval-card">
       <h4 class="section-title">审批流程</h4>
       <el-timeline>
-        <el-timeline-item v-for="(step, index) in approvalSteps" :key="index" :timestamp="step.time" placement="top">
-          <p><strong>{{ step.status }}</strong></p>
-          <p>审核人：{{ step.person }}</p>
-          <p>意见：{{ step.comment }}</p>
-        </el-timeline-item>
+        <el-timeline-item
+  v-for="(step, index) in approvalSteps"
+  :key="index"
+  :timestamp="step.time"
+  placement="top"
+  class="approval-step"
+>
+  <p><strong>{{ step.status }}:{{ step.touname }}</strong></p>
+  <p>审核人：{{ step.person }}</p>
+  <p>意见：{{ step.comment }}</p>
+</el-timeline-item>
       </el-timeline>
     </el-card>
     </div>
+
+    <el-dialog
+  :visible.sync="previewVisible"
+  width="60%"
+  top="10vh"
+  :append-to-body="true"
+  class="image-preview-dialog"
+>
+  <img :src="previewImage" alt="预览图" style="width: 100%" />
+</el-dialog>
   </div>
 </template>
 
@@ -100,6 +139,8 @@ export default {
         status_name:"",
         location: { lng: 0, lat: 0 },
       },
+      previewVisible: false,
+    previewImage: '',
       map: null,
       marker: null,
       approvalSteps: [
@@ -116,6 +157,10 @@ export default {
     this.initMap();
   },
   methods: {
+    handlePreview(imgUrl) {
+    this.previewImage = imgUrl
+    this.previewVisible = true
+  },
     async fetchDetailData() {
   const id = this.$route.query.id;
   if (!id) {
@@ -148,8 +193,10 @@ export default {
         reportTime: data.create_time || "未知时间",
         reportMethod: data.yhly_name || "未知来源",
         description: data.yhdesc || "暂无描述",
-        beforeImage: data.imgs ? `http://roadserver.lysoo.com:8081/${data.imgs}` : "",
-        afterImage: data.repairImg ? JSON.parse(data.repairImg).map(img => `http://roadserver.lysoo.com:8081/${img}`) : [],
+        beforeImage: data.imgs ? `http://localhost:8081/${data.imgs}` : "",
+        afterImage: data.repairImg ? JSON.parse(data.repairImg).map(img => `http://localhost:8081/${img}`) : [],
+        testing_image: data.testing_image ? `${data.testing_image}` : '',
+        counter_image: data.counter_image ? `${data.counter_image}` : '',
         standard: data.testing_standards || "暂无标准",
         strategy: data.countermeasures || "暂无对策",
         status: data.status_name,
@@ -401,4 +448,58 @@ export default {
   color: #999;
   font-style: italic;
 }
+
+.strategy-label {
+  color: #409EFF;
+  font-weight: 500;
+  font-size: 15px;
+  margin-right: 5px;
+}
+
+.strategy-text {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 14px;
+  color: #333;
+}
+
+.strategy-image {
+  display: block;
+  margin-top: 8px;
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  border: 1px solid #dcdfe6;
+}
+
+
+.approval-step {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.approval-step:hover {
+  background-color: #f0f9ff;
+  box-shadow: 0 0 6px rgba(64, 158, 255, 0.4);
+}
+
+.approval-step:hover strong,
+.approval-step:hover p {
+  color: #409EFF;
+}
+
+
+.image-preview-dialog .el-dialog__body {
+  padding: 0;
+  text-align: center;
+}
+.strategy-image {
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+.strategy-image:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.15);
+}
+
 </style>

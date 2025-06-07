@@ -24,7 +24,7 @@
     <div class="section buttom">
       <h3 class="title" style="display: flex;">    <img :src="right">  <div class="mmfont">安全隐患等级分布</div>  <img :src="left"></h3>
       <div class="title-content">
-        <div class="hazard-item" v-for="(hazard, index) in hazardSummary" :key="index">
+        <div class="hazard-item" v-for="(hazard, index) in hazardSummary" :key="index"    @click="handleHazardClick(index)">
           <img :src="hazard.imgSrc">
           <div class="hazard-text">
             <div style="font-size: 12px;">{{ hazard.level }}</div>
@@ -128,6 +128,12 @@ export default {
     }
   },
   methods: {
+    handleHazardClick(index) {
+  // 隐患等级映射：0=特大, 1=重大, 2=一般, 3=轻微 -> 13, 12, 11, 10
+  const levelMapping = [13, 12, 11, 10];
+  const level = levelMapping[index];
+  this.$emit('hazard-click', level);
+},
     increaseZoom() {
       if (this.map && this.currentZoom < 18) {
         this.currentZoom++;
@@ -185,7 +191,6 @@ async onStreetChange() {
     this.updateCharts(); // 更新图表，仅显示街道数据
 
     var all = {name:'亭湖区'};
-    console.log(2222222222222222);
     this.$emit("selected-street-change", all);
     this.$emit("draw-polygon",'all',1);
   } else {

@@ -33,7 +33,7 @@
         <el-form-item label="申请材料">
           <el-upload
             ref="upload"
-            action="/admin/fileUpload"
+            action="`${$uploadBaseUrl}/admin/fileUpload`"
             :file-list="fileList"
             :on-success="handleUploadSuccess"
             :on-remove="handleFileRemove"
@@ -48,7 +48,7 @@
               <el-option v-for="item in facilityTypeList" :key="item.id" :label="item.name" :value="item.id" />
             </el-select>
             <el-upload
-              action="/admin/fileUpload"
+              action="`${$uploadBaseUrl}/admin/fileUpload`"
               :on-success="(response) => handleFacilityUpload(response, index)"
               :file-list="facility.fileList">
               <el-button size="small" type="primary">上传图片</el-button>

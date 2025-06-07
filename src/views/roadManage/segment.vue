@@ -9,6 +9,18 @@
         clearable
         @keyup.enter.native="handleFilter"
       />
+      <el-select
+  v-model="listQuery.segment_type"
+  placeholder="选择路段类型"
+  clearable
+  style="width: 160px; margin-left: 10px;"
+  class="filter-item"
+>
+  <el-option label="普通路段" :value="1" />
+  <el-option label="临水路段" :value="2" />
+  <el-option label="学校路段" :value="3" />
+  <el-option label="急弯路段" :value="30" />
+</el-select>
       <el-button
         v-waves
         class="filter-item"
@@ -65,11 +77,17 @@
       <el-table-column label="起点经纬度" prop="spoint" align="center" min-width="150px" />
       <el-table-column label="终点经纬度" prop="epoint" align="center" min-width="150px" />
       <el-table-column label="道路长度 (km)" prop="length" align="center" min-width="120px" />
-      <el-table-column label="道路类型" prop="type" align="center" min-width="150px">
-        <template slot-scope="{ row }">
-          <span>{{ sectionTypeMap[row.type] }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column label="路段类型" prop="segment_type" align="center" min-width="120px">
+  <template slot-scope="{ row }">
+    <span>{{ segmentTypeMap[row.segment_type] || '未知类型' }}</span>
+  </template>
+</el-table-column>
+
+<el-table-column label="路段朝向" prop="direction" align="center" min-width="120px">
+  <template slot-scope="{ row }">
+    <span>{{ directionMap[row.direction] || '未知方向' }}</span>
+  </template>
+</el-table-column>
  
       <el-table-column label="创建时间" prop="create_time" align="center" min-width="150px" />
       <el-table-column label="操作" align="center" width="300" class-name="small-padding fixed-width">
@@ -165,6 +183,19 @@
               <el-option label="急弯路段" :value="30" />
             </el-select>
           </el-form-item>
+
+          <el-form-item label="路段朝向:" prop="direction">
+  <el-select v-model="temp.direction" placeholder="请选择路段朝向">
+    <el-option label="东 → 西" :value="1" />
+    <el-option label="西 → 东" :value="2" />
+    <el-option label="南 → 北" :value="3" />
+    <el-option label="北 → 南" :value="4" />
+    <el-option label="东南 → 西北" :value="5" />
+    <el-option label="西北 → 东南" :value="6" />
+    <el-option label="东北 → 西南" :value="7" />
+    <el-option label="西南 → 东北" :value="8" />
+  </el-select>
+</el-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -209,6 +240,16 @@
     >确认</el-button>
   </div>
 </el-dialog>
+<el-dialog
+  title="路段标注查看"
+  :visible.sync="viewDialogVisible"
+  width="80%"
+>
+  <div id="viewMap" style="width: 100%; height: 400px;"></div>
+  <div slot="footer" class="dialog-footer">
+    <el-button @click="viewDialogVisible = false">关闭</el-button>
+  </div>
+</el-dialog>
   </div>
 </template>
 
@@ -245,7 +286,8 @@ export default {
       listQuery: {
         page: 1,
         limit: 20,
-        name: ''
+        name: '',
+        segment_type: null
       },
       mapMode: null, // 当前模式：'start' 设置起点，'end' 设置终点
       temp: {
@@ -257,6 +299,7 @@ export default {
         length: '',
         cid: null,
         type: null,
+        direction: '',
         segment_type: null,
         waypoints: [], // 路径点
       },
@@ -287,6 +330,12 @@ export default {
         { value: 5, label: '高速道路' },
         { value: 6, label: '国省道路' }
       ],
+      segmentTypeMap: {
+        1: '普通路段',
+        2: '临水路段',
+        3: '学校路段',
+        30: '急弯路段'
+      },
       sectionTypeMap: {
         1: '城市主干道',
         2: '城市次干道',
@@ -295,6 +344,16 @@ export default {
         5: '高速道路',
         6: '国省道路'
       },
+      directionMap: {
+  1: '东 → 西',
+  2: '西 → 东',
+  3: '南 → 北',
+  4: '北 → 南',
+  5: '东南 → 西北',
+  6: '西北 → 东南',
+  7: '东北 → 西南',
+  8: '西南 → 东北'
+},
       mapDialogVisible: false,
       startPoint: null,
       endPoint: null,
@@ -303,6 +362,12 @@ export default {
       endMarker: null,
       route: null, // 保存路线实例
       highlightedRoute: null, // 保存高亮线路
+      viewDialogVisible: false, // 查看弹窗控制
+      viewMap: null,            // 查看用地图实例
+      viewHighlightedRoute: null, // 路线高亮
+      viewStartMarker: null,
+      viewEndMarker: null,
+
     };
   },
   created() {
@@ -322,7 +387,7 @@ export default {
           this.$notify({ title: 'Error', message: townResponse.msg, type: 'warning' });
         }
 
-        const roadResponse = await getRoadList();
+        const roadResponse = await getRoadList({ limit: 999 });
         if (roadResponse.code === 0) {
           this.roads = roadResponse.data.data;
         } else {
@@ -388,6 +453,60 @@ export default {
       this.drawRoute();
     }
   },
+  async toSectionDetails(row) {
+  try {
+    const res = await getRoadSectionDetail(row.id);
+    if (res.code === 0) {
+      const detail = res.data;
+      const waypoints = JSON.parse(detail.waypoints || '[]');
+
+      // 打开弹窗并初始化地图
+      this.viewDialogVisible = true;
+      this.$nextTick(() => {
+        this.initViewMap(waypoints);
+      });
+    } else {
+      this.$notify({ title: 'Error', message: res.msg, type: 'warning' });
+    }
+  } catch (error) {
+    this.$notify({ title: 'Error', message: '获取详情失败', type: 'error' });
+  }
+},
+initViewMap(waypoints) {
+  if (!this.viewMap) {
+    this.viewMap = new BMap.Map("viewMap");
+    this.viewMap.enableScrollWheelZoom(true);
+  } else {
+    this.viewMap.clearOverlays();
+  }
+
+  if (!waypoints.length) return;
+
+  const points = waypoints.map(wp => new BMap.Point(parseFloat(wp.lng), parseFloat(wp.lat)));
+
+  const polyline = new BMap.Polyline(points, {
+    strokeColor: "blue",
+    strokeWeight: 5,
+    strokeOpacity: 0.8,
+  });
+  this.viewMap.addOverlay(polyline);
+
+  const start = points[0];
+  const startMarker = new BMap.Marker(start);
+  startMarker.setLabel(new BMap.Label("起点", { offset: new BMap.Size(20, -10) }));
+  this.viewMap.addOverlay(startMarker);
+
+  const end = points[points.length - 1];
+  const endMarker = new BMap.Marker(end);
+  endMarker.setLabel(new BMap.Label("终点", { offset: new BMap.Size(20, -10) }));
+  this.viewMap.addOverlay(endMarker);
+
+  // 重点：延时触发 setViewport，确保弹窗渲染完成后执行
+  setTimeout(() => {
+    this.viewMap.setViewport(points); // 自动调整地图视图以适配所有点
+  }, 300);
+},
+
 
   // 切换地图模式
   setMapMode(mode) {
@@ -566,25 +685,25 @@ resetMap() {
 
   this.$notify({ title: "地图重置", message: "已清空所有选择", type: "warning" });
 },
-    toSectionDetails(row) {
-      getRoadSectionDetail(row.id).then(res => {
-        if (res.code === 0) {
-          this.$notify({
-            title: 'Success',
-            message: '获取详情成功',
-            type: 'success',
-            duration: 1000
-          });
-        } else {
-          this.$notify({
-            title: 'Error',
-            message: res.msg,
-            type: 'warning',
-            duration: 1000
-          });
-        }
-      });
-    },
+    // toSectionDetails(row) {
+    //   getRoadSectionDetail(row.id).then(res => {
+    //     if (res.code === 0) {
+    //       this.$notify({
+    //         title: 'Success',
+    //         message: '获取详情成功',
+    //         type: 'success',
+    //         duration: 1000
+    //       });
+    //     } else {
+    //       this.$notify({
+    //         title: 'Error',
+    //         message: res.msg,
+    //         type: 'warning',
+    //         duration: 1000
+    //       });
+    //     }
+    //   });
+    // },
     handleSelectionChange(val) {
       this.ids = val.map(item => item.id);
     },
@@ -709,6 +828,33 @@ resetMap() {
         }
       });
     },
+    renderWaypointsOnMap() {
+  if (!this.map || !this.temp.waypoints.length) return;
+
+  // 清理地图
+  this.resetMap();
+
+  const points = this.temp.waypoints.map(wp => new BMap.Point(parseFloat(wp.lng), parseFloat(wp.lat)));
+
+  // 绘制路线
+  this.highlightedRoute = new BMap.Polyline(points, {
+    strokeColor: "blue",
+    strokeWeight: 5,
+    strokeOpacity: 0.8,
+  });
+  this.map.addOverlay(this.highlightedRoute);
+
+  // 设置起点、终点
+  const start = points[0];
+  const end = points[points.length - 1];
+
+  this.setStartPoint(start);
+  this.setEndPoint(end);
+
+  // 地图视角适配路线
+  this.map.setViewport(points);
+},
+
     handleUpdate(row) {
       this.temp = { ...row };
       this.dialogStatus = 'update';

@@ -32,7 +32,7 @@
 
           <el-upload
             ref="upload"
-            action="/admin/fileUpload"
+            action="`${$uploadBaseUrl}/admin/fileUpload`"
             :show-file-list="false"
             :on-success="handleUploadSuccess"
             :on-remove="handleFileRemove"

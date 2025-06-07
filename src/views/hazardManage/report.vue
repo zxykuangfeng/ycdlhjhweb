@@ -223,7 +223,7 @@ export default {
     },
     downloadReport(id) {
       console.log(id)
-      window.location.href = "admin/pitfall/report/"+id
+      window.location.href = "http://localhost:8081/admin/pitfall/report/"+id
     },
     viewReport(row) {
       this.selectedReport = { ...row };

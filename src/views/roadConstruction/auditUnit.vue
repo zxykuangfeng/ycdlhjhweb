@@ -53,16 +53,16 @@
         v-if="row.works_status === 0"
         @click="openEntryDialog(row)"
       >
-        补充材料1
+        提交资料
       </el-button>
-      <el-button
+      <!-- <el-button
         size="mini"
         type="primary"
         v-if="row.works_status === 0"
         @click="goToDetail(row.id)"
       >
         查看详情
-      </el-button>
+      </el-button> -->
       <el-button
         size="mini"
         type="primary"
@@ -90,7 +90,7 @@
       <el-button
         size="mini"
         type="primary"
-        v-if="row.works_status === 6"
+      
         @click="goToDetail(row.id)"
       >
         查看详情
@@ -109,7 +109,7 @@
         </el-form-item>
         <el-form-item label="修复图片" prop="imgs">
           <el-upload
-            action="/admin/fileUpload"
+            action="`${$uploadBaseUrl}/admin/fileUpload`"
             list-type="picture-card"
             :on-success="handleFileUpload"
             :on-remove="handleFileRemove"
@@ -212,7 +212,7 @@
     <el-form ref="elForm3" :model="entryForm" :rules="entryRules3" label-width="120px">
       <el-form-item label="交通设施方案" prop="trafficPlan">
         <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('trafficPlan', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('trafficPlan', file, fileList)"
@@ -223,7 +223,7 @@
       </el-form-item>
       <el-form-item label="围挡方案" prop="fencePlan">
         <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('fencePlan', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('fencePlan', file, fileList)"
@@ -234,7 +234,7 @@
           </el-form-item>
           <el-form-item label="施工方案" prop="constructionPlan">
             <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('constructionPlan', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('constructionPlan', file, fileList)"
@@ -245,7 +245,7 @@
           </el-form-item>
           <el-form-item label="施工图纸" prop="constructionDrawing">
             <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('constructionDrawing', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('constructionDrawing', file, fileList)"
@@ -256,7 +256,7 @@
           </el-form-item>
           <el-form-item label="安全施工承诺书" prop="safetyCommitment">
             <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('safetyCommitment', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('safetyCommitment', file, fileList)"
@@ -267,7 +267,7 @@
           </el-form-item>
           <el-form-item label="导改方案" prop="changePlan">
             <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('changePlan', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('changePlan', file, fileList)"
@@ -278,7 +278,7 @@
           </el-form-item>
           <el-form-item label="施工申请单" prop="applicationForm">
             <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('applicationForm', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('applicationForm', file, fileList)"
@@ -289,7 +289,7 @@
           </el-form-item>
           <el-form-item label="安保方案" prop="securityPlan">
             <el-upload
-    action="/admin/fileUpload"
+    action="`${$uploadBaseUrl}/admin/fileUpload`"
     list-type="text"
     :on-success="(res, file, fileList) => handleFileUpload('securityPlan', res, file, fileList)"
     :on-remove="(file, fileList) => handleFileRemove('securityPlan', file, fileList)"
@@ -326,7 +326,7 @@
         </el-form-item>
         <el-form-item label="修复图片" prop="imgs">
           <el-upload
-            action="/admin/fileUpload"
+            action="`${$uploadBaseUrl}/admin/fileUpload`"
             list-type="picture-card"
             :on-success="handleFileUpload2"
             :on-remove="handleFileRemove"
@@ -500,11 +500,11 @@ export default {
   });
 },
 goToDetail(id) {
-      this.$router.push({
-        path: '/hazardManage/libraryDetail',
-        query: { id }, // 通过 query 传递参数
-      });
-    },
+    this.$router.push({
+      path: '/hazardManage/libraryDetail',
+      query: { id } // 通过 query 传递参数
+    });
+  },
     openEntryDialog(row) {
       console.log('Row Data:', row); // 检查 row 的数据结构
       this.entryDialogVisible = true;

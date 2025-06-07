@@ -489,7 +489,7 @@ export default {
       getRoadList(this.listQuery).then(res => {
         if (res.code == 0) {
           this.list = res.data.data
-          this.total = res.data.count
+          this.total = res.data.total
         } else {
           this.list = []
           this.total = 0

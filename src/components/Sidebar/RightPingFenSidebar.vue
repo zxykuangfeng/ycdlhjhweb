@@ -113,15 +113,19 @@ export default {
   name: 'RightPingFenSidebar',
   components: { Fragment },
   props: {
-    selectedType: {
-      type: [String, null],
-      default: null,
-    },
-    selectedData: {
-      type: Object,
-      required: false,
-    },
+  selectedType: {
+    type: String,
+    default: null
   },
+  selectedData: {
+    type: Object,
+    default: null,
+  },
+  selectedIds: {
+    type: Array,
+    default: () => [],
+  }
+},
   data() {
     return {
       rightIcon: require('@/assets/right.png'),
@@ -134,13 +138,21 @@ export default {
     };
   },
   watch: {
-    selectedData: {
-      immediate: true,
-      handler() {
-        this.fetchRoadData();
-      },
-    },
+  selectedData: {
+    immediate: true,
+    handler() {
+      console.log('watch selectedData:', this.selectedData)
+      this.checkAndFetch();
+    }
   },
+  selectedIds: {
+    immediate: true,
+    handler() {
+      console.log('watch selectedIds:', this.selectedIds)
+      this.checkAndFetch();
+    }
+  }
+},
   methods: {
     async fetchRoadData() {
       try {
@@ -173,6 +185,61 @@ export default {
         console.error('请求道路评分详情接口时出错:', error);
       }
     },
+    checkAndFetch() {
+      console.log('checkAndFetch 中 selectedIds:', this.selectedIds);
+  console.log('checkAndFetch 中 selectedData:', this.selectedData);
+
+  if (this.selectedIds && this.selectedIds.length > 1) {
+    console.log('🔵 进入多选 fetchMultipleRoadData');
+    this.fetchMultipleRoadData();
+  } else if (this.selectedData && this.selectedData.id) {
+    console.log('🟢 进入单选 fetchSingleRoadData');
+    console.log(this.selectedType);
+    this.fetchSingleRoadData();
+    } else {
+      // 清空展示数据
+      this.roadDataList = [];
+      this.roadData = {};
+      this.hazardLevels = [];
+      this.scoringDetails = [];
+    }
+  },
+  async fetchSingleRoadData() {
+    try {
+      const typeMap = { '路段': 1, '路口': 2, '道路': 3 };
+      const typeValue = typeMap[this.selectedType] || 1;
+
+      const res = await safeRoadScore({ id: this.selectedData.id, type: typeValue });
+      if (res.code === 0) {
+        this.roadData = res.data.data || {};
+        this.hazardLevels = res.data.yhdj || [];
+        this.scoringDetails = res.data.yhjcx || [];
+        this.expandedSections = new Array(this.scoringDetails.length).fill(false);
+      }
+    } catch (e) {
+      console.error('获取单个道路评分出错', e);
+    }
+  },
+  async fetchMultipleRoadData() {
+    try {
+      const typeMap = { '路段': 1, '路口': 2, '道路': 3 };
+      const typeValue = typeMap[this.selectedType] || 1;
+
+      const res = await safeRoadScore({
+        ids: this.selectedIds.join(','),
+        type: typeValue
+      });
+
+      if (res.code === 0) {
+        this.roadDataList = res.data.list || [];
+        // 合并展示内容：
+        this.aggregateHazardLevels();
+        this.aggregateScoringDetails();
+      }
+    } catch (e) {
+      console.error('获取多个道路评分出错', e);
+    }
+  },
     toggleSection(index) {
       this.$set(this.expandedSections, index, !this.expandedSections[index]);
     },

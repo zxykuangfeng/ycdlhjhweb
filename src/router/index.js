@@ -45,6 +45,14 @@ export const constantRoutes = [
     }
   },
   {
+    path: '/enterprise',
+    component: () => import('@/views/app/Enterprise.vue'),
+    hidden: true,
+    meta: {
+      requiresAuth: false, // 不需要登录
+    }
+  },
+  {
     path: '/public-page', 
     component: () => import('@/views/mobile/index'), // 确保正确路径
     hidden: true, 
@@ -261,6 +269,7 @@ export const asyncRoutes = [
         name: 'libraryDetail',
         meta: {
           title: '隐患详情',
+          noPermission: true 
           // roles: ['admin']
         },
         hidden: true
@@ -356,7 +365,7 @@ export const asyncRoutes = [
         component: () => import('@/views/roadConstruction/repairDetail'),
         name: 'libraryDetail',
         meta: {
-          title: '占道施工详情',
+          title: '隐患详情',
           // roles: ['admin']
         },
         hidden: true
@@ -446,39 +455,30 @@ export const asyncRoutes = [
       }
     ]
   },
-  // // 隐患修复
-  // {
-  //   path: '/hazardRepair',
-  //   component: Layout,
-  //   redirect: '/hazardRepair/request',
-  //   alwaysShow: true, // will always show the root menu
-  //   name: 'HazardRepair',
-  //   meta: {
-  //     title: '隐患修复',
-  //     icon: 'skill',
-  //     roles: ['admin'] // you can set roles in root nav
-  //   },
-  //   children: [
-  //     {
-  //       path: 'request',
-  //       component: () => import('@/views/hazardRepair/request'),
-  //       name: 'Request',
-  //       meta: {
-  //         title: '修复申请',
-  //         roles: ['admin']
-  //       }
-  //     },
-  //     {
-  //       path: 'result',
-  //       component: () => import('@/views/hazardRepair/result'),
-  //       name: 'Result',
-  //       meta: {
-  //         title: '修复结果',
-  //         roles: ['admin']
-  //       }
-  //     }
-  //   ]
-  // },
+  // 隐患修复
+  {
+    path: '/accident',
+    component: Layout,
+    redirect: '/accident/request',
+    alwaysShow: true, // will always show the root menu
+    name: 'accident',
+    meta: {
+      title: '事故管理',
+      icon: 'skill',
+      roles: ['admin'] // you can set roles in root nav
+    },
+    children: [
+      {
+        path: 'request',
+        component: () => import('@/views/accident/list'),
+        name: 'Request',
+        meta: {
+          title: '事故管理',
+          roles: ['admin']
+        }
+      }
+    ]
+  },
   { path: '*', redirect: '/404', hidden: true }
 ]
 

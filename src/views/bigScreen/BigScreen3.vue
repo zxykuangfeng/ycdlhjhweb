@@ -96,6 +96,7 @@
     <left-sidebar v-if="showLeftSidebar" @hide-sidebar="showLeftSidebar = false" :map="map"
     @selected-street-change="handleStreetChange"
       @draw-polygon="drawPolygon"
+      @hazard-click="filterPitfalls"
       :currentZoom.sync="zoomLevel"
       />
       <right-sidebar :selected-street-data="selectedStreetData" @hazard-clicked="handleHazardClick"/>
@@ -130,7 +131,7 @@ export default {
       popupVisible: false, // 控制弹窗显示
       popupContent: '', // 弹窗内容
       buttonCount: 4, // Number of buttons
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'], // Button labels
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分','事故画像', '管理平台'], // Button labels
       zoomLevel: 15, // 初始缩放等级
       map: null, // 保存地图实例
       dialogTitle: '',
@@ -170,15 +171,17 @@ export default {
       selectedStreetData: null, // 存储当前选中的街道数据
       currentYhdj:null,
       currentYhlb:null,
+      currentTwonId:null,
     }
   },
   methods: {
+
     async drawPolygon(polygonData, safe_status) {
   if (!this.map) return;
 
-  console.log('1111111111111111');
-  console.log(polygonData);
-  console.log('safe_status:', safe_status);
+  // console.log('1111111111111111');
+  // console.log(polygonData);
+  // console.log('safe_status:', safe_status);
 
   // 清除现有覆盖物
   this.map.getOverlays().forEach(overlay => {
@@ -305,7 +308,7 @@ export default {
       return polygons.filter(polygon => polygon.length > 0); // 过滤空多边形
     },
     handleButtonSelected(index) {
-      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/'];
+      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/big-screen5', '/'];
       this.$router.push(routes[index]);
     },
     chunkArray(array, chunkSize) {
@@ -397,7 +400,7 @@ export default {
     //道路划线
     async drawRoads() {
       try {
-        const res = await getRoadSectionList();
+        const res = await getRoadSectionList({limit:500});
         if (res.code === 0) {
           const roads = res.data.data;
           roads.forEach(road => {
@@ -407,8 +410,8 @@ export default {
             points.push(new BMap.Point(...road.epoint.split(',').map(Number)));
 
             const polyline = new BMap.Polyline(points, {
-              strokeColor: "blue",
-              strokeWeight: 6,
+              strokeColor: '#3877F2',
+              strokeWeight: 3,
               strokeOpacity: 0.8,
               zIndex: 2
             });
@@ -431,21 +434,19 @@ export default {
     },
     //隐患标注
     async loadPitfalls() {
+      console.log('loadPitfallsstart')
       try {
         const query = { limit: 1000 };
         if (this.currentYhdj) query.yhdj = this.currentYhdj;
         if (this.currentYhlb) query.yhlb = this.currentYhlb;
-        
+        if (this.currentTwonId) query.yhTwon = this.currentTwonId;
         const res = await getPitfallList(query);
-        // const res = await getPitfallList(query);
-        console.log(2222)
-        console.log(res)
         if (res.code === 0) {
           this.pitfallList = res.data.data;
 
           const markers = this.pitfallList.map((item) => {
 
-            console.log('item',item)
+            // console.log('item',item)
             const [lng, lat] = item.point.split(',').map(Number); // 解析 point 字段
             const point = new BMap.Point(lng, lat); // 创建地图点
 
@@ -493,6 +494,8 @@ export default {
               const pixelPoint = this.map.pointToPixel(adjustedPoint); // 获取屏幕像素坐标
               const adjustedPixelPoint = new BMap.Pixel(pixelPoint.x, pixelPoint.y + offsetY); // 调整像素坐标的 Y 值
               const adjustedMapPoint = this.map.pixelToPoint(adjustedPixelPoint); // 转换回地图坐标
+
+              
               switch (item.yhdj) {
                 case 10:
                   levelText = '轻微隐患';
@@ -515,7 +518,9 @@ export default {
                   backgroundColor = '#666'; // 默认灰色
                   break;
               }
-
+              const displayAddress = (item.address && typeof item.address === 'string' && item.address.trim())
+  ? item.address.trim()
+  : `经度：${lng.toFixed(4)}，纬度：${lat.toFixed(4)}`;
               const infoWindowContent = `
     <div style="
       position: relative;
@@ -554,7 +559,10 @@ export default {
           border-radius: 5px;
         ">
           <img src="${this.right}" alt="右侧图片" style="width: 20px; height: 20px;">
-          <div style="flex: 1; text-align: center; color: #FFFFFF;">${item.yhlb_name}</div>
+          <div style="flex: 1; text-align: center; color: #FFFFFF;">
+  ${item.yhlb_name}
+  <span style="display: none;">${item.id}</span>
+</div>
           <img src="${this.left}" alt="左侧图片" style="width: 20px; height: 20px;">
         </h3>
 
@@ -585,7 +593,7 @@ export default {
         ">
           <div style="flex: 1; font-size: 14px; color: #FFFFFF;">隐患描述</div>
           <div style="flex: 2; font-size: 14px; color: #FFFFFF;">
-            ${item.testing_standards.length > 80 ? item.testing_standards.substring(0, 80) + '...' : item.testing_standards}
+            ${item.testing_standards.length > 80 ? item.testing_standards.substring(0, 98) + '...' : item.testing_standards}
 
           </div>
         </div>
@@ -602,7 +610,7 @@ export default {
           align-items: center;
         ">
         <img src="${this.dingweiImage}"  alt="隐患图片" style="width: 20px; height: auto; object-fit: cover; cursor: pointer;" />
-          <span style="margin-left:10px;">${item.address}</span>
+          <span style="margin-left:10px;">${displayAddress}</span>
         </div>
 
         <!-- 排查时间 -->
@@ -738,9 +746,12 @@ export default {
       // 关闭弹窗
       this.popupVisible = false;
     },
-    handleStreetChange(streetData) {
+     handleStreetChange(streetData) {
       this.selectedStreetData = { ...streetData };
       console.log('父组件更新 selectedStreetData:', this.selectedStreetData);
+      let selectedStreetData = this.selectedStreetData;
+      this.currentTwonId = selectedStreetData.id;
+      this.loadPitfalls();
     },
     async filterPitfalls(yhdj) {
       this.currentYhdj = yhdj;

@@ -108,7 +108,7 @@
             </el-form-item>
             <el-form-item label="修复照:" prop="imgs">
               <el-upload
-                action="/admin/fileUpload"
+                action="`${$uploadBaseUrl}/admin/fileUpload`"
                 list-type="picture-card"
                 :file-list="temp.imgs"
                 :on-success="handleUploadSuccess"

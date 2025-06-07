@@ -9,14 +9,15 @@
           :value="value"
         />
       </el-select>
-      <el-select v-model="listQuery.yhlb" placeholder="隐患类别" class="filter-item" clearable>
-        <el-option
-          v-for="(label, value) in yhlbOptions"
-          :key="value"
-          :label="label"
-          :value="value"
-        />
-      </el-select>
+      <el-date-picker
+  v-model="listQuery.dateRange"
+  type="daterange"
+  range-separator="至"
+  start-placeholder="开始日期"
+  end-placeholder="结束日期"
+  class="filter-item"
+  value-format="yyyy-MM-dd"
+/>
       <el-select v-model="listQuery.yhjcx" placeholder="隐患检查项" class="filter-item" clearable>
         <el-option
           v-for="(label, value) in yhjcxOptions"
@@ -213,8 +214,7 @@
       style="margin-left: 20px;background: transparent"
       ><img :src="rightImage" alt="" /></button> -->
 </div>
-    <div class="close-button" style="  top: -40px;
-  right: -55px;" @click="closeLargeImage">×</div>
+    <div class="close-button" style="  top: -40px; right: -55px;" @click="closeLargeImage">×</div>
 
   </div>
 </div>
@@ -253,7 +253,8 @@ export default {
         yhjcx: '',
         yhdj: '',
         yhly: '',
-        status:''
+        status:'',
+        dateRange: [] // 新增：时间段
       },
       yhcjOptions: {
         1: '普通路段',
@@ -310,16 +311,23 @@ export default {
     },
     getList() {
       this.listLoading = true;
-      getPitfallList(this.listQuery).then(res => {
-        if (res.code === 0) {
-          this.list = res.data.data;
-          this.total = res.data.total;
-        } else {
-          this.list = [];
-          this.total = 0;
-        }
-        this.listLoading = false;
-      });
+      const [start, end] = this.listQuery.dateRange || [];
+
+getPitfallList({
+  ...this.listQuery,
+  start_time: start || '',
+  end_time: end || ''
+}).then(res => {
+  if (res.code === 0) {
+    this.list = res.data.data;
+    this.total = res.data.total;
+  } else {
+    this.list = [];
+    this.total = 0;
+  }
+  this.listLoading = false;
+});
+
 
       worksMember(this.listQuery).then(res => {
         console.log('this.userList',this.userList)

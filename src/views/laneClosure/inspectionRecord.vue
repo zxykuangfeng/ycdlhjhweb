@@ -43,7 +43,7 @@
           <el-input v-model="formData.remark" type="textarea" placeholder="请输入备注信息" />
         </el-form-item>
         <el-form-item label="图片">
-          <el-upload action="/admin/fileUpload" list-type="text" :on-success="handleFileUpload">
+          <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text" :on-success="handleFileUpload">
             <el-button type="primary">上传</el-button>
           </el-upload>
         </el-form-item>

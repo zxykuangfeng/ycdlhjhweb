@@ -914,7 +914,7 @@ export function safeRoadChild(params = {}) {
 
 export function worksMember() {
   return request({
-    url: `/works/member`,
+    url: `/works/member2`,
      method: 'get'
  });
 }
@@ -1281,5 +1281,79 @@ export function sgxmsAllList(id) {
   return request({
     url: `sgxms/allList`,
     method: 'get'
+  });
+}
+
+
+// 事故管理接口
+export function getAccidentList(params) {
+  return request({
+    url: '/accident/list',
+    method: 'get',
+    params
+  });
+}
+
+export function getAccidentDetail(id) {
+  return request({
+    url: `/accident/detail/${id}`,
+    method: 'get'
+  });
+}
+
+export function accidentRecord(case_number) {
+  return request({
+    url: `/accident/record?case_number=${case_number}`,
+    method: 'get'
+  });
+}
+
+
+export function addAccident(data) {
+  return request({
+    url: '/accident/add',
+    method: 'post',
+    data
+  });
+}
+
+export function editAccident(data) {
+  return request({
+    url: '/accident/edit',
+    method: 'put',
+    data
+  });
+}
+
+export function deleteAccident(id) {
+  return request({
+    url: `/accident/delete/${id}`,
+    method: 'delete'
+  });
+}
+
+export function importAccident(data) {
+  return request({
+    url: '/accident/import',
+    method: 'post',
+    data
+  });
+}
+
+
+
+export function screenAccidentList(params = {}) {
+  return request({
+    url: 'screen/accident/list',
+    method: 'get',
+    params
+  });
+}
+
+export function screenAccidentCount(params = {}) {
+  return request({
+    url: 'screen/accident/count',
+    method: 'get',
+    params
   });
 }

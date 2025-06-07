@@ -243,7 +243,7 @@ export default {
           this.$notify({ title: 'Error', message: townResponse.msg, type: 'warning' });
         }
 
-        const roadResponse = await getRoadList();
+        const roadResponse = await getRoadList({ limit: 1000 });
         if (roadResponse.code === 0) {
           this.roads = roadResponse.data.data;
         } else {

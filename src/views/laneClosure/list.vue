@@ -143,7 +143,7 @@
         <el-input v-model="facility.location" placeholder="请输入设施位置"></el-input>
       </el-form-item>
       <el-form-item label="施工前图片">
-        <el-upload action="/admin/fileUpload" list-type="text" 
+        <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text" 
           :on-success="(res, file, fileList) => handleFileUploadFacilities(index, res, file, fileList)">
           <el-button type="primary">上传图片</el-button>
         </el-upload>
@@ -159,19 +159,19 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item label="交通设施方案">
-            <el-upload action="/admin/fileUpload" list-type="text"
+            <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`" list-type="text"
               :on-success="(res, file, fileList) => handleFileUpload('trafficPlan', res, file, fileList)">
               <el-button type="primary">上传</el-button>
             </el-upload>
           </el-form-item>
           <el-form-item label="围挡方案">
-            <el-upload action="/admin/fileUpload" list-type="text"
+            <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text"
               :on-success="(res, file, fileList) => handleFileUpload('fencePlan', res, file, fileList)">
               <el-button type="primary">上传</el-button>
             </el-upload>
           </el-form-item>
           <el-form-item label="施工方案">
-            <el-upload action="/admin/fileUpload" list-type="text"
+            <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text"
               :on-success="(res, file, fileList) => handleFileUpload('constructionPlan', res, file, fileList)">
               <el-button type="primary">上传</el-button>
             </el-upload>
@@ -179,19 +179,19 @@
         </el-col>
         <el-col :span="12">
           <el-form-item label="施工图纸">
-            <el-upload action="/admin/fileUpload" list-type="text"
+            <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text"
               :on-success="(res, file, fileList) => handleFileUpload('constructionDrawing', res, file, fileList)">
               <el-button type="primary">上传</el-button>
             </el-upload>
           </el-form-item>
           <el-form-item label="安全施工承诺书">
-            <el-upload action="/admin/fileUpload" list-type="text"
+            <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text"
               :on-success="(res, file, fileList) => handleFileUpload('safetyCommitment', res, file, fileList)">
               <el-button type="primary">上传</el-button>
             </el-upload>
           </el-form-item>
           <el-form-item label="安保方案">
-            <el-upload action="/admin/fileUpload" list-type="text"
+            <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text"
               :on-success="(res, file, fileList) => handleFileUpload('securityPlan', res, file, fileList)">
               <el-button type="primary">上传</el-button>
             </el-upload>
@@ -260,7 +260,7 @@
   <el-table-column label="施工后图片" align="center">
     <template slot-scope="{ row, $index }">
       <el-upload
-        action="/admin/fileUpload"
+        action="`${$uploadBaseUrl}/admin/fileUpload`"
         :on-success="(res, file, fileList) => handleCompletionFileUpload($index, res, file, fileList)"
         list-type="text"
       >
@@ -274,7 +274,7 @@
 </el-table>
         <el-divider content-position="center" >竣工申请材料</el-divider>
         <el-form-item label="竣工报告">
-          <el-upload action="/admin/fileUpload" list-type="text"
+          <el-upload  :action="`${$uploadBaseUrl}/admin/fileUpload`"list-type="text"
             :on-success="(res, file, fileList) => handleCompletionFileUpload('completionReport', res, file, fileList)">
             <el-button type="primary">上传</el-button>
           </el-upload>

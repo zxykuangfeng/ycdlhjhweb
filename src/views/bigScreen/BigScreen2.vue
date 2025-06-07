@@ -7,14 +7,31 @@
       <div id="map" class="map-container"></div>
     </div>
     <!-- 固定的左上角选择框 -->
-
+    <!-- <div class="section-top" style="width: 443px;height: 40px;line-height: 40px;padding-left: 30px;margin-top: 20px;font-size: 16px;font-weight: 800;display: flex;align-items: center;">
+     <img :src="right"> <div style="margin-left: 3px;">选择区划</div>
+    </div>
+  -->
     <div class="section-top" style="width: 443px;height: 40px;line-height: 40px;padding-left: 30px;margin-top: 20px;font-size: 16px;font-weight: 800;display: flex;align-items: center;">
      <img :src="right"> <div style="margin-left: 3px;">选择道路</div>
     </div>
-    
-    
-    <div class="fixed-div"> 
-      <div>
+
+    <div class="fixed-div" style="top:120px"> 
+      <div >  <label class="label">行政 区划</label>
+  <el-select
+    v-model="selectedAid"
+    placeholder="请选择行政区划"
+    clearable
+    style="width: 330px;"
+    @change="fetchRoadList"
+  >
+    <el-option
+      v-for="item in townList"
+      :key="item.id"
+      :label="item.name"
+      :value="item.id"
+    />
+  </el-select>
+  <div style="margin-top: 20px;">
       <label for="road-select" class="label">道路 搜索</label>
       <el-select
       v-model="selectedRoadId"
@@ -32,6 +49,7 @@
         :value="road.id"
       />
     </el-select>
+  </div>
   </div>
   <div style="margin-top: 20px;">
   <label class="label">路段/路口</label>
@@ -278,7 +296,7 @@
         @click="prevImage" 
         class="image-nav-button" 
         style="margin-right: 20px;background: transparent"
-      >{{isPanoramaImg}} <img :src="leftImage" alt="" /></button>
+      ><img :src="leftImage" alt="" /></button>
 
     <img :src="largeImageSrc" alt="大图" class="large-image" />
     <!-- <img 
@@ -306,7 +324,7 @@
 
 <script>
 import HeaderComponent from '@/components/Header/HeaderComponent';
-import { getRoadSectionList,screenRoadList,screenRoadChildList,roadFacility,property,roadFacilityRoad,roadFacilityAll,jcvDetail,jcvOp } from '@/api/road';
+import { getRoadSectionList,screenTownList,screenRoadList,screenRoadChildList,roadFacility,property,roadFacilityRoad,roadFacilityAll,jcvDetail,jcvOp } from '@/api/road';
 export default {
   name: 'BigScreen2',
   components: {
@@ -314,6 +332,8 @@ export default {
   },
   data() {
     return {
+      selectedAid: null,
+      townList: [], 
       headerImage: require('@/assets/header-image.png'),
       buttonImage: require('@/assets/button.png'),
       selectedButtonImage: require('@/assets/button-selected.png'),
@@ -337,7 +357,7 @@ export default {
       panoramaImage: '', // 模拟的实景图地址
       panoramaVisible: false, // 是否显示全景图片弹窗
       buttonCount: 4,
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'],
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分','事故画像', '管理平台'],
       zoomLevel: 12, // 初始缩放等级
       map: null, // 保存地图实例
       roadRectionList: [], // 保存所有道路数据
@@ -418,11 +438,11 @@ export default {
     isPanoramaImg:false,
     assetList: [
       { fid: 7, image: require('@/assets/minorpitfall.png'), label: '警告标志' },
-      { fid: 8, image: require('@/assets/stop.png'), label: '禁令标志' },
       { fid: 9, image: require('@/assets/tips.png'), label: '指示标志' },
       { fid: 10, image: require('@/assets/luzhi.png'), label: '指路标志' },
-      { fid: 11, image: require('@/assets/deng.png'), label: '施工安全标志' },
-      { fid: 12, image: require('@/assets/sgaq.png'), label: '交通信号灯' }
+      { fid: 8, image: require('@/assets/stop.png'), label: '禁令限速标志' },
+      { fid: 11, image: require('@/assets/sgaq.png'), label: '施工安全标志' },
+      { fid: 12, image: require('@/assets/deng.png'), label: '交通信号灯' }
     ]
     };
 
@@ -460,7 +480,7 @@ export default {
   },
   async fetchRoadList() {
     try {
-      const res = await screenRoadList();
+      const res = await screenRoadList({ aid: this.selectedAid }); // 添加 aid 参数
       console.log('Road List API Response:', res);
       if (res.code === 0) {
         this.roadList = [{ id: null, name: '全部' }, ...res.data.road];
@@ -516,7 +536,7 @@ export default {
         const res = await screenRoadChildList();
         if (res.code === 0) {
           const roads = res.data.section;
-          this.roadRectionList = roads;
+          this.roadRectionList = [{ id: null, name: '全部' }, ...roads];
           this.drawRoads(roads);
           await this.fetchProperty({ type: null, id: null }); // 传递参数 type 和 id
           console.log('fetchRoadSections')
@@ -527,7 +547,7 @@ export default {
         const res = await screenRoadChildList(this.selectedRoadId);
         if (res.code === 0) {
           const roads = res.data.section;
-          this.roadRectionList = roads;
+          this.roadRectionList = [{ id: null, name: '全部' }, ...roads];
           this.drawRoads(roads);
           await this.fetchProperty({ type: 3, id: this.selectedRoadId }); // 传递参数 type 和 id
         }
@@ -554,7 +574,7 @@ export default {
     this.disableNormalModeInteractions();
   },
     handleButtonSelected(index) {
-      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/'];
+      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/big-screen5', '/'];
       this.$router.push(routes[index]);
     },
     async initMap() {
@@ -585,110 +605,20 @@ export default {
     },
 
     addMarkers() {
-  if (!this.map) {
-    console.error("地图对象未初始化");
-    return;
-  }
-  if (!Array.isArray(this.points) || this.points.length === 0) {
-    console.error("this.points 为空或不是数组");
-    return;
-  }
+  if (!this.map || !Array.isArray(this.points) || !this.markerImages) return;
 
-  const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯']; // 类型标签数组
-  console.log('points:', this.points);
+  const typeLabels = ['警告标志', '禁令限速标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯'];
 
   this.points.forEach(({ lng, lat, type, imgs, road_name, create_time, address }) => {
-    console.log('lng:', lng, 'lat:', lat);
-
-    if (typeof lng !== 'number' || typeof lat !== 'number') {
-      console.error("lng 或 lat 不是有效的数字", { lng, lat });
-      return;
-    }
+    if (typeof lng !== 'number' || typeof lat !== 'number') return;
+    if (!this.markerImages[type - 1]) return;
 
     const point = new BMap.Point(lng, lat);
-    console.log('point:', point);
-
-    if (!this.markerImages || !this.markerImages[type - 1]) {
-      console.error("markerImages 未定义或索引越界", { type, markerImages: this.markerImages });
-      return;
-    }
-
     const markerIcon = new BMap.Icon(this.markerImages[type - 1], new BMap.Size(30, 30));
     const marker = new BMap.Marker(point, { icon: markerIcon });
-
-    if (!marker) {
-      console.error("marker 创建失败", { point, markerIcon });
-      return;
-    }
-
-    console.log('marker:', marker);
-
-    const levelText = "一级"; // 示例等级文字
-    const backgroundColor = "#FF3333"; // 示例背景颜色
-    const fullImageUrl = `http://roadserver.lysoo.com:8081/${imgs}`;
-
-    const infoWindowContent = `
-      <div style="
-        position: relative;
-        width: 530px;
-        height: 550px;
-        background: url(${this.popbgImage || ''});
-        background-repeat: no-repeat; 
-        background-size: 100% 100%;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: left;
-        border-radius: 10px;
-        box-sizing: border-box;
-      ">
-        <div style="
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          padding: 20px;
-          box-sizing: border-box;
-        ">
-          <h3 class="title" style="
-            font-size: 16px;
-            height: 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-            padding: 0 10px;
-            margin-bottom: 15px;
-            background: linear-gradient(270deg, rgba(23, 54, 125, 0.4) 0%, #193D8C 50%, rgba(23, 54, 125, 0.4) 100%);
-            border-radius: 5px;
-          ">
-            <img src="${this.right || ''}" alt="右侧图片" style="width: 20px; height: 20px;">
-            <div style="flex: 1; text-align: center; color: #FFFFFF;">${road_name} ${typeLabels[type - 7] || '未知类型'}</div>
-            <img src="${this.left || ''}" alt="左侧图片" style="width: 20px; height: 20px;">
-          </h3>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
-            <div style="font-size: 14px; color: #89C0FF;">${typeLabels[type - 7] || '未知类型'}</div>
-            
-          </div>
-
-          <div style="width: 100%; height: 1px; background: #3877F2; margin-bottom: 15px;"></div>
-
-          <div style="font-size: 14px; color: #89C0FF; margin-bottom: 10px; display:flex; align-items: center;">
-            <span style="margin-left:10px;">${address || ''}</span>
-          </div>
-
-          <div style="font-size: 14px; color: #617199; margin-bottom: 20px; display:flex; align-items: center;">
-            <span style="margin-left:10px;">排查时间：${create_time || ''}</span>
-          </div>
-
-          <div id="popupImageContainer" style="width: 100%; height: 350px; border-radius: 5px; overflow: hidden;">
-            <img id="popupImage" src="${fullImageUrl}" alt="" style="width: 100%; height: auto; object-fit: cover;" />
-          </div>
-        </div>
-      </div>
-    `;
+    const infoWindowContent = this.generateInfoWindowContent({
+      road_name, type, address, create_time, imgs,lng,lat
+    });
 
     const infoWindow = new BMap.InfoWindow(infoWindowContent, {
       width: 530,
@@ -698,41 +628,79 @@ export default {
     });
 
     marker.addEventListener('click', () => {
-      console.log('Marker clicked:', marker);
-      const zoomLevel = this.map.getZoom();
-      console.log('zoomLevel:', zoomLevel);
+        setTimeout(() => {
+          try {
+            const zoomLevel = this.map.getZoom();
+            const baseOffset = 0.002;
+            const offsetFactor = Math.pow(2, 18 - zoomLevel);
+            const adjustedOffset = baseOffset * offsetFactor;
+            const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
 
-      const baseOffset = 0.002;
-      const offsetFactor = Math.pow(2, 18 - zoomLevel);
-      const adjustedOffset = baseOffset * offsetFactor;
+            this.map.openInfoWindow(infoWindow, point);
 
-      const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
-      this.map.openInfoWindow(infoWindow, point);
+            setTimeout(() => this.setupImageClick(imgs), 300);
+            setTimeout(() => this.map.panTo(offsetPoint), 300);
+          } catch (error) {
+            console.error('打开InfoWindow出错:', error);
+          }
+        }, 0); // 延迟到下一事件循环
+      });
 
-      setTimeout(() => {
-        const imageContainer = document.getElementById('popupImageContainer');
-        if (imageContainer) {
-          imageContainer.addEventListener('click', () => {
-            console.log('点击了图片容器！');
-            console.log(fullImageUrl);
-            this.openLargeImage(fullImageUrl);
-          });
-        }
-      }, 400);
-
-      setTimeout(() => {
-        this.map.panTo(offsetPoint);
-      }, 300);
-    });
-
-    console.log('添加 marker:', marker);
     this.map.addOverlay(marker);
   });
 },
 
+ generateInfoWindowContent({ road_name, type, address, create_time, imgs, lng, lat }) {
+  const typeLabels = {
+    3: '护栏',
+    4: '避让学生标牌',
+    5: '急弯识别标牌',
+    6: '临水路段标识',
+    7: '警告标志',
+    8: '禁令限速标志',
+    9: '指示标志',
+    10: '指路标志',
+    11: '施工安全标志',
+    12: '交通信号灯'
+  };
+
+  var fullImageUrl = "http://roadserver.lysoo.com:8081/" + imgs;
+  var displayAddress = (address && address.trim())
+    ? address
+    : "经度：" + parseFloat(lng).toFixed(4) + "，纬度：" + parseFloat(lat).toFixed(4);
+
+  return (
+    '<div style="width:100%;height:100%;padding:20px;box-sizing:border-box;background:url(' + this.popbgImage + ');background-size:cover;border-radius:10px;color:#fff;">' +
+      '<h3 class="title" style="display:flex;justify-content:space-between;align-items:center;height:40px;background:linear-gradient(270deg,rgba(23,54,125,.4),#193D8C,rgba(23,54,125,0.4));border-radius:5px;">' +
+        '<img src="' + this.right + '" style="width:20px;height:20px;">' +
+        '<div style="flex:1;text-align:center;">' +
+          road_name + ' ' + (typeLabels[type] || '未知类型') +
+        '</div>' +
+        '<img src="' + this.left + '" style="width:20px;height:20px;">' +
+      '</h3>' +
+
+      '<div style="font-size:14px;margin-top:15px;">' + displayAddress + '</div>' +
+      '<div style="font-size:14px;color:#617199;margin-top:10px;">排查时间：' + (create_time || '未知') + '</div>' +
+
+      '<div id="popupImageContainer" style="margin-top:15px;width:100%;height:350px;overflow:hidden;border-radius:5px;">' +
+        '<img loading="lazy" src="' + fullImageUrl + '" style="width:100%;height:100%;object-fit:cover;" />' +
+      '</div>' +
+    '</div>'
+  );
+},
+
+
+setupImageClick(imgs) {
+  const imageContainer = document.getElementById('popupImageContainer');
+  if (imageContainer) {
+    imageContainer.onclick = () => {
+      this.openLargeImage(`http://roadserver.lysoo.com:8081/${imgs}`);
+    };
+  }
+},
 
   showMarkerPopup(type) {
-  const typeLabels = ['警告标志', '禁令标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯'];
+  const typeLabels = ['警告标志', '禁令限速标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯'];
 
   if (type >= 1 && type <= 6) {
     this.popupContent = {
@@ -765,7 +733,7 @@ export default {
 
       const polyline = new BMap.Polyline(points, {
         strokeColor: 'rgba(56, 119, 242,1)',
-        strokeWeight: 6,
+        strokeWeight: 3,
         strokeOpacity: 0.8,
         zIndex: 2,
       });
@@ -1075,6 +1043,24 @@ async updateStatistics(road) {
         console.error('获取上一张图片失败:', error);
       }
     },
+    handleKeyDown(event) {
+      if (this.keyPressTimer) return; // 避免重复启动定时器
+
+      if (event.key === 'ArrowRight') {
+        this.nextImage(); // 先执行一次
+        this.keyPressTimer = setInterval(this.nextImage, 300); // 持续触发
+      } else if (event.key === 'ArrowLeft') {
+        this.prevImage(); // 先执行一次
+        this.keyPressTimer = setInterval(this.prevImage, 300); // 持续触发
+      }
+    },
+
+    handleKeyUp() {
+      if (this.keyPressTimer) {
+        clearInterval(this.keyPressTimer);
+        this.keyPressTimer = null;
+      }
+    },
   async getAdjacentImage(direction) {
     try {
 
@@ -1120,8 +1106,21 @@ async updateStatistics(road) {
     this.showLargeImagePopup = false; // 隐藏弹窗
     this.isPanoramaImg = false;
   },
+  async fetchTownList() {
+  try {
+    const res = await screenTownList();
+    if (res.code === 0) {
+     this.townList = [{ id: null, name: '全部' }, ...res.data];
+    } else {
+      console.error("获取行政区划失败:", res.msg);
+    }
+  } catch (error) {
+    console.error("请求行政区划出错:", error);
+  }
+}
   },
   mounted() {
+    this.fetchTownList(); 
     this.fetchAllFacilities(); // 页面加载时请求所有道路数据
     this.fetchRoadList();
     this.initMap();
@@ -1129,10 +1128,18 @@ async updateStatistics(road) {
     this.addPanoramaClickListener(); // 实景地图监听
     this.enableNormalModeListeners(); // 初始化普通模式监听
     this.addMarkers();
-    
+    window.addEventListener('keydown', this.handleKeyDown);
+    window.addEventListener('keyup', this.handleKeyUp);
 
     console.log('filteredRoadList',this.filteredRoadList)
   },
+  beforeDestroy() {
+    window.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('keyup', this.handleKeyUp);
+    if (this.keyPressTimer) {
+      clearInterval(this.keyPressTimer);
+    }
+  }
 };
 </script>
 <style scoped>
@@ -1153,10 +1160,10 @@ async updateStatistics(road) {
 
 .fixed-div {
   position: absolute;
-  top: 120px;
+  /* top: 20px; */
   left: 10px;
   width: 446px;
-  height: 136px;
+  /* height: 136px; */
   background: linear-gradient(135deg, #1f2a51, #0b1224);
   border-radius: 8px;
   border: 1px solid #3877F2;

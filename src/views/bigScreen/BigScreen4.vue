@@ -12,6 +12,11 @@
      <img :src="right"> <div style="margin-left: 3px;">选择道路</div>
     </div>
     <div class="fixed-div">
+      <label for="town-select" class="label">行政区划:</label>
+<select id="town-select" v-model="selectedAid" @change="handleTownChange" class="styled-select">
+  <option value="">全部</option>
+  <option v-for="town in townList" :key="town.id" :value="town.id">{{ town.name }}</option>
+</select>
       <label for="road-select" class="label">道路名称:</label>
       <select id="road-select" v-model="selectedRoadId" @change="handleRoadSelectionByRoad" class="styled-select">
         <option v-for="road in roadList" :key="road.id" :value="road.id">{{ road.name }}</option>
@@ -52,7 +57,9 @@
        <!-- 路段内容 -->
        <div class="statistics-div" v-if="selectedTab === '路段'">
       <div class="statistics-header">
-        <div class="statistics-cell">序号</div>
+        <div class="statistics-cell">
+          <input type="checkbox" @change="toggleSelectAll('road', $event); highlightSelectedRoads()" />
+  </div>
         <div class="statistics-cell name-column">道路名称</div>
         <div class="statistics-cell">安全评分</div>
         <div class="statistics-cell">安全等级</div>
@@ -64,7 +71,9 @@
         :class="{ 'row-alternate': index % 2 === 1 }"
         @click="handleRoadSelection(item)"
       >
-        <div class="statistics-cell">{{ (roadCurrentPage - 1) * itemsPerPage + index + 1 }}</div>
+      <div class="statistics-cell">
+        <input type="checkbox" v-model="selectedRoadIds" :value="item.id" @change="highlightSelectedRoads()" />
+  </div>
         <div class="statistics-cell name-column" :title="item.name">{{ item.name }}</div>
         <div class="statistics-cell">{{ item.score }}</div>
         <div class="statistics-cell">
@@ -96,7 +105,9 @@
     <!-- 路口内容 -->
     <div class="statistics-div" v-if="selectedTab === '路口'">
       <div class="statistics-header">
-        <div class="statistics-cell">序号</div>
+        <div class="statistics-cell">
+    <input type="checkbox" @change="toggleSelectAll('intersection', $event)" />
+  </div>
         <div class="statistics-cell name-column">路口名称</div>
         <div class="statistics-cell">安全评分</div>
         <div class="statistics-cell">安全等级</div>
@@ -108,8 +119,9 @@
         :class="{ 'row-alternate': index % 2 === 1 }"
         @click="handleIntersectionSelection(item)"
       >
-        <div class="statistics-cell">{{ (intersectionCurrentPage - 1) * itemsPerPage + index + 1 }}</div>
-        <div class="statistics-cell name-column">{{ item.name }}</div>
+      <div class="statistics-cell">
+    <input type="checkbox" v-model="selectedIntersectionIds" :value="item.id" />
+  </div>        <div class="statistics-cell name-column">{{ item.name }}</div>
         <div class="statistics-cell">{{ item.score }}</div>
         <div class="statistics-cell">
           <span
@@ -122,6 +134,7 @@
     </div>
     <right-ping-fen-sidebar 
       :selectedData="selectedData"
+      :selectedIds="selectedRoadIds"
       :selectedType="selectedType"
       @item-selected="handleItemSelection"
     />
@@ -143,7 +156,7 @@
 </template>
 <script>
 import HeaderComponent from '@/components/Header/HeaderComponent';
-import { getRoadSectionList,getRoadCrossingList,screenRoadChildList,safeRoadChild,screenRoadList } from '@/api/road';
+import { getRoadSectionList,getRoadCrossingList,screenRoadChildList,safeRoadChild,screenRoadList,screenTownList  } from '@/api/road';
 import RightPingFenSidebar from '@/components/Sidebar/RightPingFenSidebar'
 export default {
   name: 'BigScreen4',
@@ -166,7 +179,7 @@ export default {
       sgaqImage: require('@/assets/sgaq.png'),
       lukoImage: require('@/assets/luko.png'),
       buttonCount: 4,
-      buttonLabels: ['道路户籍化', '隐患画像', '安全评分', '管理平台'],
+      buttonLabels: ['道路户籍化', '隐患画像', '安全评分','事故画像', '管理平台'], // Button labels
       zoomLevel: 12, // 初始缩放等级
       map: null, // 保存地图实例
       markers: [], // 存储路口标注
@@ -196,10 +209,48 @@ export default {
       selectedSafetyLevel: "", // 存储当前选中的安全等级
       selectedHazard: null,
       selectedItem: null,
-      infoWindow: null
+      infoWindow: null,
+      townList: [], // 行政区划列表
+       selectedAid: '', // 选中的行政区划ID
+       selectedRoadIds: [],
+    selectedIntersectionIds: [],
     };  
   },
   methods: {
+    handleTownChange() {
+  this.fetchRoadList(this.selectedAid); // 根据选中的区划重新获取道路
+},
+highlightSelectedRoads() {
+  this.roadPolylines.forEach(({ polyline, id, roadData }) => {
+    if (this.selectedRoadIds.includes(id)) {
+      const safetyLevel = this.getSafetyLevel(roadData.score);
+      polyline.setStrokeColor(safetyLevel.color);
+      polyline.setStrokeWeight(3);
+      polyline.setStrokeOpacity(1);
+    } else {
+      polyline.setStrokeWeight(3);
+      polyline.setStrokeOpacity(0.2);
+    }
+  });
+
+  // 清除其他标注（如果需要）
+  this.markers.forEach(marker => this.map.removeOverlay(marker));
+  this.circles.forEach(circle => this.map.removeOverlay(circle));
+  this.markers = [];
+  this.circles = [];
+},
+    async fetchTownList() {
+  try {
+    const res = await screenTownList();
+    if (res.code === 0) {
+      this.townList = res.data.town || [];
+    } else {
+      console.error("行政区划获取失败", res.msg);
+    }
+  } catch (err) {
+    console.error("获取行政区划列表错误", err);
+  }
+},
   getSafetyLevel(score) {
     if (score >= 90) {
       return { text: '良好', color: '#32AF06' }; // 绿色
@@ -267,6 +318,14 @@ export default {
 
 
   },
+  toggleSelectAll(type, event) {
+    const checked = event.target.checked;
+    if (type === 'road') {
+      this.selectedRoadIds = checked ? this.roadScores.map(item => item.id) : [];
+    } else if (type === 'intersection') {
+      this.selectedIntersectionIds = checked ? this.intersectionScores.map(item => item.id) : [];
+    }
+  },
   handleIntersectionSelection(intersection) {
     this.selectedType = "路口";
       this.selectedData = intersection;
@@ -309,11 +368,16 @@ export default {
   console.log('New marker, circle added, and zoom level set to:', targetZoomLevel);
 },
   async handleRoadSelectionByRoad() {
+    console.log(111111111111111111)
+    console.log(this.selectedRoadId)
+    console.log(this.selectedRoadIds)
   try {
 
     const params = { 
-      id: this.selectedRoadId, 
-      yhdj: this.selectedSafetyLevel || undefined // 传入选中的安全等级，默认不传
+      id: this.selectedRoadIds.length ? this.selectedRoadIds.join(',') : this.selectedRoadId,
+      yhdj: this.selectedSafetyLevel || undefined, // 传入选中的安全等级，默认不传
+      aid: this.selectedAid || undefined // ✅ 关键点：加上这行
+
     };
     // 如果选中“全部”，不传递道路ID
     const res = await safeRoadChild(params);
@@ -343,6 +407,7 @@ export default {
         const selectedRoad = this.roadList.find(road => road.id === this.selectedRoadId);
         this.selectedRoad = selectedRoad || null;
         this.selectedType = "道路";
+        // this.selectedTab = "道路";
         this.selectedData = selectedRoad || null;
       }
     } else {
@@ -352,13 +417,13 @@ export default {
     console.error("Error fetching road data:", error);
   }
 },
-  async fetchRoadList() {
+async fetchRoadList(aid = '') {
   try {
-    const res = await screenRoadList(); // 调用道路列表接口
+    const res = await screenRoadList({ aid });
     if (res.code === 0) {
       this.roadList = [{ id: null, name: '全部' }, ...res.data.road];
-      this.selectedRoadId = null; // 初始选中为“全部”
-      this.handleRoadSelectionByRoad(); // 加载所有道路的划线
+      this.selectedRoadId = null;
+      this.handleRoadSelectionByRoad(); // ⚠️ aid 需一并用于数据加载
     } else {
       console.error("Failed to fetch road list:", res.msg);
     }
@@ -367,7 +432,7 @@ export default {
   }
 },
     handleButtonSelected(index) {
-      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/'];
+      const routes = ['/big-screen2', '/big-screen3', '/big-screen4', '/big-screen5', '/'];
       this.$router.push(routes[index]);
     },
     
@@ -470,6 +535,8 @@ async initMap() {
 
   handleRoadSelection(road) {
   // 遍历所有路段
+  console.log(2222222222)
+  console.log(road)
   this.selectedType = "路段";
       this.selectedData = road;
   this.roadPolylines.forEach(({ polyline, id }) => {
@@ -524,6 +591,7 @@ computed: {
   },
   mounted() {
     this.initMap();
+    this.fetchTownList();
     this.fetchRoadList(); // 获取道路下拉框数据并初始化列表框
     this.fetchRoadAndIntersectionScores(); // 加载初始路段和路口数据（无参数）
   },
@@ -550,7 +618,7 @@ computed: {
   top: 120px;
   left: 10px;
   width: 446px;
-  height: 136px;
+  /* height: 136px; */
   background: linear-gradient(135deg, #1f2a51, #0b1224);
   border-radius: 4px;
   border: 1px solid #3877F2;
