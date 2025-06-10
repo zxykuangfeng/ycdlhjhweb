@@ -890,7 +890,13 @@ setupImageClick(imgs) {
   },
   drawRoads(roads) {
   console.log('clearOverlays')
-  this.map.clearOverlays();
+  if (this.map) {
+    this.map.getOverlays().forEach((overlay) => {
+      if (overlay instanceof BMap.Polyline) {
+        this.map.removeOverlay(overlay);
+      }
+    });
+  }
   this.roadPolylines = [];
 
   roads.forEach((road) => {
