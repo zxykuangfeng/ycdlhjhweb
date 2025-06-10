@@ -358,7 +358,7 @@ export default {
       panoramaVisible: false, // 是否显示全景图片弹窗
       buttonCount: 4,
       buttonLabels: ['道路户籍化', '隐患画像', '安全评分','事故画像', '管理平台'],
-      zoomLevel: 16, // 初始缩放等级
+      zoomLevel: 15, // 初始缩放等级
       map: null, // 保存地图实例
       roadRectionList: [], // 保存所有道路数据
       roadList: [], // 道路列表
@@ -380,36 +380,6 @@ export default {
       selectedAssetType: null, // 选中的资产类型
       isOpeningPopup: false,
       points: [
-  // {"lng": 120.15173, "lat": 33.38557, "type": 4},
-  // {"lng": 120.1516, "lat": 33.38636, "type": 1},
-  // {"lng": 120.15149, "lat": 33.38692, "type": 6},
-  // {"lng": 120.15147, "lat": 33.38701, "type": 1},
-  // {"lng": 120.15077, "lat": 33.38944, "type": 4},
-  // {"lng": 120.15045, "lat": 33.3906, "type": 5},
-  // {"lng": 120.15045, "lat": 33.3906, "type": 4},
-  // {"lng": 120.15043, "lat": 33.39066, "type": 6},
-  // {"lng": 120.15041, "lat": 33.39075, "type": 3},
-  // {"lng": 120.1504, "lat": 33.39079, "type": 5},
-  // {"lng": 120.15241, "lat": 33.37878, "type": 3},
-  // {"lng": 120.15279, "lat": 33.37884, "type": 1},
-  // {"lng": 120.1549, "lat": 33.37925, "type": 3},
-  // {"lng": 120.1555, "lat": 33.37947, "type": 3},
-  // {"lng": 120.1555, "lat": 33.37947, "type": 3},
-  // {"lng": 120.15591, "lat": 33.37971, "type": 1},
-  // {"lng": 120.15651, "lat": 33.38015, "type": 2},
-  // {"lng": 120.15665, "lat": 33.38027, "type": 3},
-  // {"lng": 120.1571, "lat": 33.38061, "type": 6},
-  // {"lng": 120.15758, "lat": 33.38098, "type": 6},
-  // {"lng": 120.13573, "lat": 33.38753, "type": 6},
-  // {"lng": 120.13582, "lat": 33.38755, "type": 1},
-  // {"lng": 120.13594, "lat": 33.38757, "type": 3},
-  // {"lng": 120.13618, "lat": 33.38762, "type": 2},
-  // {"lng": 120.13657, "lat": 33.3877, "type": 5},
-  // {"lng": 120.13724, "lat": 33.38782, "type": 6},
-  // {"lng": 120.13773, "lat": 33.38792, "type": 4},
-  // {"lng": 120.13779, "lat": 33.38793, "type": 6},
-  // {"lng": 120.13779, "lat": 33.38793, "type": 3},
-  // {"lng": 120.13778, "lat": 33.38796, "type": 1}
 ],
 directionMap: {
   1: '东 → 西',
@@ -444,7 +414,6 @@ directionMap: {
     filteredRoadList: [], // 筛选后的道路列表
     showDropdown: false, // 控制下拉框的显示
     currentImage:"",
-
     currentImageId:"",
     isPanoramaImg:false,
     assetList: [
@@ -453,7 +422,6 @@ directionMap: {
       { fid: 10, image: require('@/assets/luzhi.png'), label: '指路标志' },
       { fid: 8, image: require('@/assets/stop.png'), label: '禁令限速标志' },
       { fid: 11, image: require('@/assets/deng.png'), label: '交通信号灯' },
-      // { fid: 12, image: require('@/assets/deng.png'), label: '交通信号灯' }
     ]
     };
 
@@ -503,39 +471,39 @@ directionMap: {
     const { strokeColor, fillColor } = colorMapping[safe_status] || colorMapping[0];
 
     if (polygonData === 'all') {
-      try {
-        const boundaryService = new BMap.Boundary();
-        boundaryService.get('亭湖区', result => {
-          if (result.boundaries.length === 0) {
-            console.error('Failed to get boundaries for 亭湖区');
-            return;
-          }
+      // try {
+      //   const boundaryService = new BMap.Boundary();
+      //   boundaryService.get('亭湖区', result => {
+      //     if (result.boundaries.length === 0) {
+      //       console.error('Failed to get boundaries for 亭湖区');
+      //       return;
+      //     }
 
-          const allPoints = [];
-          result.boundaries.forEach(boundary => {
-            const points = boundary
-              .split(';')
-              .map(coord => coord.split(',').map(Number))
-              .map(([lng, lat]) => new BMap.Point(lng, lat));
-            const polygon = new BMap.Polygon(points, {
-              strokeColor,
-              fillColor,
-              strokeWeight: 1,
-              strokeOpacity: 0.7,
-              fillOpacity: 0.3,
-            });
-            this.map.addOverlay(polygon);
-            allPoints.push(...points);
-          });
+      //     const allPoints = [];
+      //     result.boundaries.forEach(boundary => {
+      //       const points = boundary
+      //         .split(';')
+      //         .map(coord => coord.split(',').map(Number))
+      //         .map(([lng, lat]) => new BMap.Point(lng, lat));
+      //       const polygon = new BMap.Polygon(points, {
+      //         strokeColor,
+      //         fillColor,
+      //         strokeWeight: 1,
+      //         strokeOpacity: 0.7,
+      //         fillOpacity: 0.3,
+      //       });
+      //       this.map.addOverlay(polygon);
+      //       allPoints.push(...points);
+      //     });
 
-          if (allPoints.length > 0) {
-            this.map.setViewport(allPoints);
-          }
-        });
-      } catch (error) {
-        console.error('Error fetching boundary data:', error);
-      }
-      return;
+      //     if (allPoints.length > 0) {
+      //       this.map.setViewport(allPoints);
+      //     }
+      //   });
+      // } catch (error) {
+      //   console.error('Error fetching boundary data:', error);
+      // }
+      // return;
     }
 
     const polygons = this.parsePolygon(polygonData);
@@ -707,7 +675,7 @@ directionMap: {
     async initMap() {
       if (!this.map) {
         this.map = new BMap.Map("map", {
-        minZoom: 15, // 最小缩放级别（例如县/市级）
+        minZoom: 14, // 最小缩放级别（例如县/市级）
         maxZoom: 18, // 最大缩放级别（例如街道/路段）
       });      
       }
@@ -890,7 +858,13 @@ setupImageClick(imgs) {
   },
   drawRoads(roads) {
   console.log('clearOverlays')
-  this.map.clearOverlays();
+  if (this.map) {
+    this.map.getOverlays().forEach((overlay) => {
+      if (overlay instanceof BMap.Polyline) {
+        this.map.removeOverlay(overlay);
+      }
+    });
+  }
   this.roadPolylines = [];
 
   roads.forEach((road) => {
