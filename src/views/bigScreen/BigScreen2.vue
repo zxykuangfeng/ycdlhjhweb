@@ -483,6 +483,110 @@ directionMap: {
       this.showDropdown = false;
     }, 200);
   },
+  async drawPolygon(polygonData, safe_status) {
+    if (!this.map) return;
+
+    // 清除现有覆盖物
+    this.map.getOverlays().forEach(overlay => {
+      if (overlay instanceof BMap.Polygon) {
+        this.map.removeOverlay(overlay);
+      }
+    });
+
+    const colorMapping = {
+      0: { strokeColor: 'blue', fillColor: '#87CEEB' },
+      1: { strokeColor: '#70A45D', fillColor: 'rgba(50, 175, 6, 0.3)' },
+      2: { strokeColor: '#A4865D', fillColor: 'rgba(175, 100, 6, 0.3)' },
+      3: { strokeColor: '#A45D5D', fillColor: 'rgba(175, 6, 6, 0.3)' },
+    };
+
+    const { strokeColor, fillColor } = colorMapping[safe_status] || colorMapping[0];
+
+    if (polygonData === 'all') {
+      try {
+        const boundaryService = new BMap.Boundary();
+        boundaryService.get('亭湖区', result => {
+          if (result.boundaries.length === 0) {
+            console.error('Failed to get boundaries for 亭湖区');
+            return;
+          }
+
+          const allPoints = [];
+          result.boundaries.forEach(boundary => {
+            const points = boundary
+              .split(';')
+              .map(coord => coord.split(',').map(Number))
+              .map(([lng, lat]) => new BMap.Point(lng, lat));
+            const polygon = new BMap.Polygon(points, {
+              strokeColor,
+              fillColor,
+              strokeWeight: 1,
+              strokeOpacity: 0.7,
+              fillOpacity: 0.3,
+            });
+            this.map.addOverlay(polygon);
+            allPoints.push(...points);
+          });
+
+          if (allPoints.length > 0) {
+            this.map.setViewport(allPoints);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching boundary data:', error);
+      }
+      return;
+    }
+
+    const polygons = this.parsePolygon(polygonData);
+    if (polygons.length === 0) {
+      console.error('Polygon data is empty or invalid:', polygonData);
+      return;
+    }
+
+    const allPoints = [];
+    polygons.forEach(points => {
+      const polygon = new BMap.Polygon(points, {
+        strokeColor,
+        fillColor,
+        strokeWeight: 1,
+        strokeOpacity: 0.7,
+        fillOpacity: 0.3,
+      });
+      this.map.addOverlay(polygon);
+      allPoints.push(...points);
+    });
+
+    if (allPoints.length > 0) {
+      this.map.setViewport(allPoints);
+    } else {
+      console.warn('No valid points to set viewport.');
+    }
+  },
+  parsePolygon(polygonData) {
+    const polygons = [];
+    if (polygonData.startsWith('MULTIPOLYGON')) {
+      const matches = polygonData.match(/\(\(\((.*?)\)\)\)/g);
+      if (matches) {
+        matches.forEach(multi => {
+          const cleanCoords = multi.replace(/\(\(\(/, '').replace(/\)\)\)/, '');
+          const coords = cleanCoords.split(',').map(coord => {
+            const [lng, lat] = coord.trim().split(' ').map(Number);
+            return new BMap.Point(lng, lat);
+          });
+          polygons.push(coords);
+        });
+      }
+    } else if (polygonData.startsWith('POLYGON')) {
+      const cleanCoords = polygonData.replace(/POLYGON\(\(/, '').replace(/\)\)/, '');
+      const coords = cleanCoords.split(',').map(coord => {
+        const [lng, lat] = coord.trim().split(' ').map(Number);
+        return new BMap.Point(lng, lat);
+      });
+      polygons.push(coords);
+    }
+    return polygons.filter(polygon => polygon.length > 0);
+  },
     switchToMapMode() {
       if (this.map) {
         this.map.setMapType(BMAP_NORMAL_MAP); // 切换到普通地图模式
@@ -499,6 +603,13 @@ directionMap: {
         this.filteredRoadList = this.roadList;
         this.selectedRoadId = null;
         this.fetchRoadSections();
+
+        const selected = this.townList.find(item => item.id === this.selectedAid);
+        if (selected) {
+          this.drawPolygon(selected.polygon, selected.safe_status);
+        } else {
+          this.drawPolygon('all', 1);
+        }
       } else {
         console.error('Failed to fetch road list:', res.msg);
       }
@@ -779,7 +890,13 @@ setupImageClick(imgs) {
   },
   drawRoads(roads) {
   console.log('clearOverlays')
-  this.map.clearOverlays();
+  if (this.map) {
+    this.map.getOverlays().forEach((overlay) => {
+      if (overlay instanceof BMap.Polyline) {
+        this.map.removeOverlay(overlay);
+      }
+    });
+  }
   this.roadPolylines = [];
 
   roads.forEach((road) => {
@@ -1229,7 +1346,7 @@ async updateStatistics(road) {
   try {
     const res = await screenTownList();
     if (res.code === 0) {
-     this.townList = [{ id: null, name: '全部' }, ...res.data];
+     this.townList = [{ id: null, name: '全部', polygon: 'all', safe_status: 1 }, ...res.data];
     } else {
       console.error("获取行政区划失败:", res.msg);
     }
