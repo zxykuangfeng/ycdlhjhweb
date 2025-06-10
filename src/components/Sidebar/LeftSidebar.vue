@@ -441,6 +441,14 @@ updateBarChart(data) {
   flex-direction: column;
   align-items: center;
   position: relative;
+  cursor: pointer; /* 悬浮手型 */
+  transition: all 0.3s ease; /* 平滑动画 */
+}
+
+.hazard-item:hover {
+  transform: translateY(-3px); /* 向上浮动一点点 */
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3); /* 添加发光阴影 */
+  filter: brightness(1.2); /* 提亮 */
 }
 
 .hazard-text {

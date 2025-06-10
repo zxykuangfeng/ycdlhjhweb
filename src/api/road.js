@@ -716,10 +716,11 @@ export function rejectRepairWorks(data) {
 }
 
 
-export function screenRoadList() {
+export function screenRoadList(params) {
   return request({
     url: '/screen/road/road',
     method: 'get',
+    params // 会被自动拼接成 query string: ?aid=xxx
   });
 }
 
@@ -768,7 +769,7 @@ export function roadFacilityRoad(id) {
 
 export function roadFacilityAll() {
     return request({
-      url: `/screen/road/facility/0/0`,
+      url: `/screen/road/facility/0/100`,
        method: 'get'
    });
 

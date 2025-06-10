@@ -484,7 +484,7 @@ export default {
             const marker = new BMap.Marker(point, { icon: myIcon }); // 创建标注
             marker.addEventListener('click', () => {
 
-              console.log(`Clicked marker with name: ${item.name}`); // 输出被点击标记的名称
+              console.log(`Clicked marker with name: }`+item.other_name); // 输出被点击标记的名称
 
               // 根据隐患等级设置背景颜色和文字
               let levelText = '';
@@ -568,7 +568,7 @@ export default {
 
         <!-- 信息行 -->
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 15px;">
-          <div style="font-size: 14px; color: #89C0FF;">城市主干道</div>
+          <div style="font-size: 14px; color: #89C0FF;">${item.rtype_name} ${item.road_name} ${item.other_name} </div>
           <div style="
             width: 80px;
             height: 25px;

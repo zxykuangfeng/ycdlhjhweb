@@ -8,7 +8,7 @@ import getPageTitle from '@/utils/get-page-title'
 
 NProgress.configure({ showSpinner: false }) // NProgress Configuration
 
-const whiteList = ['/login', '/auth-redirect', '/big-screen', '/public-page', '/collectionTask'].map(path => path.toLowerCase());
+const whiteList = ['/login', '/auth-redirect', '/big-screen', '/public-page', '/collectionTask','/enterprise','/hazardManage/libraryDetail'].map(path => path.toLowerCase());
 
 router.beforeEach(async(to, from, next) => {
   // start progress bar
@@ -19,7 +19,8 @@ router.beforeEach(async(to, from, next) => {
 
   // determine whether the user has logged in
   const hasToken = getToken()
-
+  console.log('当前访问：', to.path)
+  console.log('meta信息：', to.meta)
   if (hasToken) {
     if (to.path === '/login') {
       // if is logged in, redirect to the home page
@@ -28,7 +29,11 @@ router.beforeEach(async(to, from, next) => {
     } else {
       // determine whether the user has obtained his permission roles through getInfo
       const hasRoles = store.getters.roles && store.getters.roles.length > 0
-      if (hasRoles) {
+
+      console.log(hasRoles)
+      if (to.matched.some(record => record.meta && record.meta.noPermission)) {
+        next()
+      } else if (hasRoles) {
         next()
       } else {
         try {

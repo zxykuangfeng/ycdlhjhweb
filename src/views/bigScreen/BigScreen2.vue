@@ -358,7 +358,7 @@ export default {
       panoramaVisible: false, // 是否显示全景图片弹窗
       buttonCount: 4,
       buttonLabels: ['道路户籍化', '隐患画像', '安全评分','事故画像', '管理平台'],
-      zoomLevel: 12, // 初始缩放等级
+      zoomLevel: 16, // 初始缩放等级
       map: null, // 保存地图实例
       roadRectionList: [], // 保存所有道路数据
       roadList: [], // 道路列表
@@ -378,6 +378,7 @@ export default {
       road_length:null,
       road_name:null,
       selectedAssetType: null, // 选中的资产类型
+      isOpeningPopup: false,
       points: [
   // {"lng": 120.15173, "lat": 33.38557, "type": 4},
   // {"lng": 120.1516, "lat": 33.38636, "type": 1},
@@ -410,6 +411,16 @@ export default {
   // {"lng": 120.13779, "lat": 33.38793, "type": 3},
   // {"lng": 120.13778, "lat": 33.38796, "type": 1}
 ],
+directionMap: {
+  1: '东 → 西',
+  2: '西 → 东',
+  3: '南 → 北',
+  4: '北 → 南',
+  5: '东南 → 西北',
+  6: '西北 → 东南',
+  7: '东北 → 西南',
+  8: '西南 → 东北'
+},
     markerImages: [
       '',
       '',
@@ -441,8 +452,8 @@ export default {
       { fid: 9, image: require('@/assets/tips.png'), label: '指示标志' },
       { fid: 10, image: require('@/assets/luzhi.png'), label: '指路标志' },
       { fid: 8, image: require('@/assets/stop.png'), label: '禁令限速标志' },
-      { fid: 11, image: require('@/assets/sgaq.png'), label: '施工安全标志' },
-      { fid: 12, image: require('@/assets/deng.png'), label: '交通信号灯' }
+      { fid: 11, image: require('@/assets/deng.png'), label: '交通信号灯' },
+      // { fid: 12, image: require('@/assets/deng.png'), label: '交通信号灯' }
     ]
     };
 
@@ -496,38 +507,43 @@ export default {
     }
   },
 
-  async fetchProperty({ type, id,fid} = {}) {
-    try {
-      const res = await property({ type, id ,fid});
-      console.log('Property List API Response:', res);
-      if (res.code === 0 && res.data) {
-          const points = res.data.map((item) => {
-            const [lng, lat] = item.point.split(',').map(Number); // 分解经纬度
-            return {
-              name: item.name || '未知标志',
-              type: item.fid, // 对应的 fid 值
-              lat,
-              lng,
-              fname: item.fname || '未知类型', // 标志类型名称
-              imgs: item.imgs, // 图片信息
-              road_name: item.road_name,
-              address: item.address,
-              create_time:item.create_time
-            };
-          });
-           this.points = points; 
+  async fetchProperty({ type, id, fid } = {}) {
+  try {
+    const res = await property({ type, id, fid, limit: 100 });
+    console.log('Property List API Response:', res);
+    
+    if (res.code === 0 && res.data) {
+      const points = res.data
+        //  .slice(0, 100) // 确保只处理前100条
+        .map((item) => {
+          const [lng, lat] = item.point.split(',').map(Number);
+          return {
+            name: item.name || '未知标志',
+            type: item.fid,
+            lat,
+            lng,
+            fname: item.fname || '未知类型',
+            imgs: item.imgs,
+            road_name: item.road_name,
+            address: item.address,
+            create_time: item.create_time,
+            section_name: item.section_name,
+            direction:item.direction,
+          };
+        });
 
-           console.log('points',this.points)
-          // 添加标注到地图
-          // this.addMarkers(points);
-          this.addMarkers()
-        } else {
-          console.error('Failed to fetch property data:', res.msg);
-        }
-      } catch (error) {
-        console.error('Error fetching property data:', error);
-      }
-  },
+      this.points = points;
+      // console.log('points', this.points);
+
+      // 添加标注到地图
+      this.addMarkersInView(); // 如果只标注 this.points，则这里不需要传参
+    } else {
+      console.error('Failed to fetch property data:', res.msg);
+    }
+  } catch (error) {
+    console.error('Error fetching property data:', error);
+  }
+},
   //选中道路的方法
   async fetchRoadSections() {
     try {
@@ -579,12 +595,15 @@ export default {
     },
     async initMap() {
       if (!this.map) {
-        this.map = new BMap.Map('map');
+        this.map = new BMap.Map("map", {
+        minZoom: 15, // 最小缩放级别（例如县/市级）
+        maxZoom: 18, // 最大缩放级别（例如街道/路段）
+      });      
       }
 
-      console.log('Map instance:', this.map);
+      // console.log('Map instance:', this.map);
       if (!this.map) {
-        console.error('Map initialization failed.');
+        // console.error('Map initialization failed.');
         return;
       }
 
@@ -605,19 +624,45 @@ export default {
     },
 
     addMarkers() {
-  if (!this.map || !Array.isArray(this.points) || !this.markerImages) return;
+  if (!this.map || !Array.isArray(this.points)) return;
 
-  const typeLabels = ['警告标志', '禁令限速标志', '指示标志', '指路标志', '施工安全标志', '交通信号灯'];
+  // 若正在打开弹窗，则跳过重绘，避免打点时清掉弹窗
+  if (this.isOpeningPopup) {
+    console.log('跳过 addMarkers，因为正在打开 InfoWindow');
+    return;
+  }
 
-  this.points.forEach(({ lng, lat, type, imgs, road_name, create_time, address }) => {
+  const zoom = this.map.getZoom();
+  if (zoom < 10) {
+    this.clearMarkers();
+    return;
+  }
+
+  const bounds = this.map.getBounds();
+  const visiblePoints = this.points.filter(({ lng, lat }) => {
+    const point = new BMap.Point(lng, lat);
+    return bounds.containsPoint(point);
+  });
+
+  this.clearMarkers();
+
+  visiblePoints.forEach(({ lng, lat, type, imgs, road_name, create_time, address }) => {
     if (typeof lng !== 'number' || typeof lat !== 'number') return;
     if (!this.markerImages[type - 1]) return;
 
     const point = new BMap.Point(lng, lat);
     const markerIcon = new BMap.Icon(this.markerImages[type - 1], new BMap.Size(30, 30));
     const marker = new BMap.Marker(point, { icon: markerIcon });
+
     const infoWindowContent = this.generateInfoWindowContent({
-      road_name, type, address, create_time, imgs,lng,lat
+      road_name,
+      type,
+      address,
+      create_time,
+      imgs,
+      lng,
+      lat,
+      section_name,direction
     });
 
     const infoWindow = new BMap.InfoWindow(infoWindowContent, {
@@ -627,30 +672,42 @@ export default {
       enableMessage: false,
     });
 
+    // 🌟 防止弹窗因地图 panTo 触发 moveend 而被清掉
     marker.addEventListener('click', () => {
-        setTimeout(() => {
-          try {
-            const zoomLevel = this.map.getZoom();
-            const baseOffset = 0.002;
-            const offsetFactor = Math.pow(2, 18 - zoomLevel);
-            const adjustedOffset = baseOffset * offsetFactor;
-            const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
+      this.isOpeningPopup = true; // 打点中
 
-            this.map.openInfoWindow(infoWindow, point);
+      this.map.removeEventListener('moveend', this.addMarkers);
+      this.map.removeEventListener('zoomend', this.addMarkers);
 
-            setTimeout(() => this.setupImageClick(imgs), 300);
-            setTimeout(() => this.map.panTo(offsetPoint), 300);
-          } catch (error) {
-            console.error('打开InfoWindow出错:', error);
-          }
-        }, 0); // 延迟到下一事件循环
-      });
+      const zoomLevel = this.map.getZoom();
+      const baseOffset = 0.002;
+      const offsetFactor = Math.pow(2, 18 - zoomLevel);
+      const adjustedOffset = baseOffset * offsetFactor;
+      const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
+
+      this.map.openInfoWindow(infoWindow, point);
+
+      setTimeout(() => {
+        this.map.panTo(offsetPoint);
+      }, 100);
+
+      // 恢复监听并结束标志位
+      setTimeout(() => {
+        this.map.addEventListener('moveend', this.addMarkers);
+        this.map.addEventListener('zoomend', this.addMarkers);
+        this.isOpeningPopup = false;
+        this.setupImageClick(imgs); // 若你用于点击预览大图
+      }, 1500);
+    });
 
     this.map.addOverlay(marker);
   });
 },
 
- generateInfoWindowContent({ road_name, type, address, create_time, imgs, lng, lat }) {
+generateInfoWindowContent({ road_name, type, address, create_time, imgs, lng, lat, section_name, direction }) {
+  
+  // console.log('section_name'+section_name)
+  // console.log('direction'+direction)
   const typeLabels = {
     3: '护栏',
     4: '避让学生标牌',
@@ -660,27 +717,29 @@ export default {
     8: '禁令限速标志',
     9: '指示标志',
     10: '指路标志',
-    11: '施工安全标志',
-    12: '交通信号灯'
+    11: '交通信号灯',
+    // 12: '交通信号灯'
   };
 
-  var fullImageUrl = "http://roadserver.lysoo.com:8081/" + imgs;
-  var displayAddress = (address && address.trim())
+  const fullImageUrl = "http://roadserver.lysoo.com:8081/" + imgs;
+  const displayAddress = (address && address.trim())
     ? address
     : "经度：" + parseFloat(lng).toFixed(4) + "，纬度：" + parseFloat(lat).toFixed(4);
+  const displayDirection = this.directionMap[direction] || '方向未知';
 
   return (
     '<div style="width:100%;height:100%;padding:20px;box-sizing:border-box;background:url(' + this.popbgImage + ');background-size:cover;border-radius:10px;color:#fff;">' +
       '<h3 class="title" style="display:flex;justify-content:space-between;align-items:center;height:40px;background:linear-gradient(270deg,rgba(23,54,125,.4),#193D8C,rgba(23,54,125,0.4));border-radius:5px;">' +
         '<img src="' + this.right + '" style="width:20px;height:20px;">' +
         '<div style="flex:1;text-align:center;">' +
-          road_name + ' ' + (typeLabels[type] || '未知类型') +
+          (road_name || '') + ' ' + (section_name || '') + ' ' + (typeLabels[type] || '未知类型') +
         '</div>' +
         '<img src="' + this.left + '" style="width:20px;height:20px;">' +
       '</h3>' +
 
       '<div style="font-size:14px;margin-top:15px;">' + displayAddress + '</div>' +
-      '<div style="font-size:14px;color:#617199;margin-top:10px;">排查时间：' + (create_time || '未知') + '</div>' +
+      '<div style="font-size:14px;margin-top:15px;">方向：' + displayDirection + '</div>' +
+      '<div style="font-size:14px;color:#617199;margin-top:10px;">巡检时间：' + (create_time || '未知') + '</div>' +
 
       '<div id="popupImageContainer" style="margin-top:15px;width:100%;height:350px;overflow:hidden;border-radius:5px;">' +
         '<img loading="lazy" src="' + fullImageUrl + '" style="width:100%;height:100%;object-fit:cover;" />' +
@@ -688,7 +747,6 @@ export default {
     '</div>'
   );
 },
-
 
 setupImageClick(imgs) {
   const imageContainer = document.getElementById('popupImageContainer');
@@ -861,27 +919,38 @@ async fetchAllFacilities() {
         await this.fetchProperty({ fid });
 
         // 重新在地图上添加新的标注
-        this.addMarkers();
+        this.addMarkersInView();
       } catch (error) {
         console.error('加载资产标注失败:', error);
       }
     },
     clearMarkers() {
-      if (!this.map) {
-        console.error("地图对象未初始化");
+  if (!this.map) return;
+
+  const infoWindow = this.map.getInfoWindow && this.map.getInfoWindow();
+  const infoPoint = (infoWindow && typeof infoWindow.getPosition === 'function')
+    ? infoWindow.getPosition()
+    : null;
+
+  const overlays = this.map.getOverlays();
+  overlays.forEach(overlay => {
+    if (overlay instanceof BMap.Marker) {
+      const markerPoint = overlay.getPosition();
+      // 如果当前 marker 正在显示 InfoWindow，跳过
+      if (
+        infoPoint &&
+        markerPoint &&
+        infoPoint.lng === markerPoint.lng &&
+        infoPoint.lat === markerPoint.lat
+      ) {
         return;
       }
+      this.map.removeOverlay(overlay);
+    }
+  });
 
-      // 遍历所有覆盖物，只移除 `Marker`，不影响 `Polyline`
-      const allOverlays = this.map.getOverlays();
-      allOverlays.forEach(overlay => {
-        if (overlay instanceof BMap.Marker) {
-          this.map.removeOverlay(overlay);
-        }
-      });
-
-      console.log("已清空标注，保留道路划线");
-    },
+  console.log("已清除所有标注（保留弹窗）");
+},
 async updateStatistics(road) {
   if (!road || !road.id) {
     console.error("Road ID is missing.");
@@ -1072,6 +1141,56 @@ async updateStatistics(road) {
       throw error;
     }
   },
+  addMarkersInView() {
+  if (!this.map || !Array.isArray(this.points) || !this.markerImages) return;
+
+  // 1. 获取当前地图的视野边界
+  const bounds = this.map.getBounds();
+
+  // 2. 只保留在视野范围内的点
+  const visiblePoints = this.points.filter(({ lng, lat }) => {
+    const point = new BMap.Point(lng, lat);
+    return bounds.containsPoint(point);
+  });
+
+  // 3. 清除现有标注
+  this.clearMarkers();
+
+  // 4. 遍历添加可见标注
+  visiblePoints.forEach(({ lng, lat, type, imgs, road_name, create_time, address ,section_name,direction}) => {
+    if (typeof lng !== 'number' || typeof lat !== 'number') return;
+    if (!this.markerImages[type - 1]) return;
+
+    const point = new BMap.Point(lng, lat);
+    const markerIcon = new BMap.Icon(this.markerImages[type - 1], new BMap.Size(30, 30));
+    const marker = new BMap.Marker(point, { icon: markerIcon });
+
+    const infoWindowContent = this.generateInfoWindowContent({
+      road_name, type, address, create_time, imgs, lng, lat,section_name,direction
+    });
+
+    const infoWindow = new BMap.InfoWindow(infoWindowContent, {
+      width: 530,
+      height: 550,
+      title: '',
+      enableMessage: false,
+    });
+
+    marker.addEventListener('click', () => {
+      const zoomLevel = this.map.getZoom();
+      const baseOffset = 0.002;
+      const offsetFactor = Math.pow(2, 18 - zoomLevel);
+      const adjustedOffset = baseOffset * offsetFactor;
+      const offsetPoint = new BMap.Point(point.lng, point.lat + adjustedOffset);
+
+      this.map.openInfoWindow(infoWindow, point);
+      setTimeout(() => this.setupImageClick(imgs), 300);
+      setTimeout(() => this.map.panTo(offsetPoint), 300);
+    });
+
+    this.map.addOverlay(marker);
+  });
+},
     closePanoramaImage() {
       this.panoramaVisible = false;
     },
@@ -1124,18 +1243,21 @@ async updateStatistics(road) {
     this.fetchAllFacilities(); // 页面加载时请求所有道路数据
     this.fetchRoadList();
     this.initMap();
-    this.fetchProperty();
+    this.fetchProperty({limit:100});
     this.addPanoramaClickListener(); // 实景地图监听
     this.enableNormalModeListeners(); // 初始化普通模式监听
-    this.addMarkers();
+    this.addMarkersInView();
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
-
+    this.map.addEventListener('moveend', this.addMarkersInView); // 拖动结束
+  this.map.addEventListener('zoomend', this.addMarkersInView); // 缩放结束
     console.log('filteredRoadList',this.filteredRoadList)
   },
   beforeDestroy() {
     window.removeEventListener('keydown', this.handleKeyDown);
     window.removeEventListener('keyup', this.handleKeyUp);
+    this.map.removeEventListener('moveend', this.addMarkersInView);
+  this.map.removeEventListener('zoomend', this.addMarkersInView);
     if (this.keyPressTimer) {
       clearInterval(this.keyPressTimer);
     }

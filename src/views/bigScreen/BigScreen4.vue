@@ -243,7 +243,7 @@ highlightSelectedRoads() {
   try {
     const res = await screenTownList();
     if (res.code === 0) {
-      this.townList = res.data.town || [];
+      this.townList = res.data || [];
     } else {
       console.error("行政区划获取失败", res.msg);
     }

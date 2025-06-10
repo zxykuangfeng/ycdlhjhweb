@@ -26,7 +26,7 @@ import './styles/element-variables.scss'
 
 import '@/styles/index.scss' // global css
 
-import App from './App'
+import App from './App.vue'
 import store from './store'
 import router from './router'
 
@@ -57,6 +57,8 @@ Vue.use(Element, {
 })
 import elDragDialog from '@/directive/el-drag-dialog'
 Vue.use(elDragDialog)
+Vue.prototype.$uploadBaseUrl = 'http://127.0.0.1';
+
 // register global utility filters
 Object.keys(filters).forEach(key => {
   Vue.filter(key, filters[key])
