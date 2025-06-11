@@ -564,12 +564,29 @@ directionMap: {
   async fetchRoadList() {
     try {
       const res = await screenRoadList({ aid: this.selectedAid }); // 添加 aid 参数
+      console.log('11111111111111');
       console.log('Road List API Response:', res);
       if (res.code === 0) {
         this.roadList = [{ id: null, name: '全部' }, ...res.data.road];
 
         this.filteredRoadList = this.roadList;
         this.selectedRoadId = null;
+        const data = res.data;
+const trafficList = data.facility || [];
+
+const trafficSignData = trafficList.find((item) => item.name === "交通标志");
+const trafficSignChild = trafficSignData ? trafficSignData.child || [] : [];
+this.trafficSignCounts = trafficSignChild.reduce((acc, item) => {
+  acc[item.name] = item.count || 0;
+  return acc;
+}, {});
+
+const roadMarkData = trafficList.find((item) => item.name === "路面标线");
+const roadMarkChild = roadMarkData ? roadMarkData.child || [] : [];
+this.roadMarkCounts = roadMarkChild.reduce((acc, item) => {
+  acc[item.name] = item.count || 0;
+  return acc;
+}, {});
         this.fetchRoadSections();
 
         const selected = this.townList.find(item => item.id === this.selectedAid);
@@ -586,9 +603,9 @@ directionMap: {
     }
   },
 
-  async fetchProperty({ type, id, fid } = {}) {
+  async fetchProperty({ type, id, fid, aid } = {}) {
   try {
-    const res = await property({ type, id, fid, limit: 100 });
+    const res = await property({ type, id, fid, aid, limit: 100 });
     console.log('Property List API Response:', res);
     
     if (res.code === 0 && res.data) {
@@ -633,7 +650,7 @@ directionMap: {
           const roads = res.data.section;
           this.roadRectionList = [{ id: null, name: '全部' }, ...roads];
           this.drawRoads(roads);
-          await this.fetchProperty({ type: null, id: null }); // 传递参数 type 和 id
+          await this.fetchProperty({ type: null, id: null, aid: this.selectedAid }); 
           console.log('fetchRoadSections')
           // this.updateStatistics();
         }
@@ -644,7 +661,7 @@ directionMap: {
           const roads = res.data.section;
           this.roadRectionList = [{ id: null, name: '全部' }, ...roads];
           this.drawRoads(roads);
-          await this.fetchProperty({ type: 3, id: this.selectedRoadId }); // 传递参数 type 和 id
+          await this.fetchProperty({ type: 3, id: this.selectedRoadId, aid: this.selectedAid }); // 传递参数 type 和 id
         }
         var road = {}
         road.id = this.selectedRoadId
@@ -1001,7 +1018,7 @@ async fetchAllFacilities() {
         this.clearMarkers();
 
         // 请求数据，只获取当前类型的标注
-        await this.fetchProperty({ fid });
+        await this.fetchProperty({ fid, aid: this.selectedAid });
 
         // 重新在地图上添加新的标注
         this.addMarkersInView();
@@ -1328,7 +1345,7 @@ async updateStatistics(road) {
     this.fetchAllFacilities(); // 页面加载时请求所有道路数据
     this.fetchRoadList();
     this.initMap();
-    this.fetchProperty({limit:100});
+    this.fetchProperty({ limit: 100, aid: this.selectedAid });
     this.addPanoramaClickListener(); // 实景地图监听
     this.enableNormalModeListeners(); // 初始化普通模式监听
     this.addMarkersInView();
